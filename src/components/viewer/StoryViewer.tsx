@@ -1,0 +1,66 @@
+// src/components/viewer/StoryViewer.tsx
+'use client';
+
+import { useEffect, useLayoutEffect, useRef } from 'react';
+import { BlockRenderer } from './BlockRenderer';
+import Lenis from '@studio-freight/lenis';
+import gsap from 'gsap';
+import { ScrollTrigger } from 'gsap/ScrollTrigger';
+import { StoryBlockType } from '@/lib/types'; // <-- Import our new shared type
+
+gsap.registerPlugin(ScrollTrigger);
+
+interface StoryViewerProps {
+  blocks: StoryBlockType[]; // <-- Use the new type for the array
+  projectId: string;
+}
+
+export function StoryViewer({ blocks, projectId }: StoryViewerProps) {
+  const component = useRef(null);
+
+  useEffect(() => {
+    const lenis = new Lenis();
+    function raf(time: number) {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
+    }
+    requestAnimationFrame(raf);
+    return () => lenis.destroy();
+  }, []);
+
+  useLayoutEffect(() => {
+    let ctx = gsap.context(() => {
+      const storyBlocks = gsap.utils.toArray('.story-block');
+      storyBlocks.forEach((block: any) => {
+        gsap.fromTo(block, 
+          { opacity: 0, y: 50 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: block,
+              start: 'top 80%',
+              end: 'bottom 20%',
+              toggleActions: 'play none none none',
+            },
+          }
+        );
+      });
+    }, component);
+    return () => ctx.revert();
+  }, [blocks]);
+
+  return (
+    <div ref={component}>
+      {blocks.map((block) => (
+        <div key={block.id} className="story-block">
+          <div className="my-8">
+            <BlockRenderer block={block} />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

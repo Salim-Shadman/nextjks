@@ -13,10 +13,10 @@ export function TrpcProvider({ children }: { children: React.ReactNode }) {
     trpc.createClient({
       links: [
         httpBatchLink({
-          url: '/api/trpc', // Corrected the URL to point to the conventional /api/trpc endpoint
+          url: '/api/trpc', // This should point to the correct API route
         }),
       ],
-      transformer: superjson, // Added transformer for client-side consistency
+      transformer: superjson,
     })
   );
 

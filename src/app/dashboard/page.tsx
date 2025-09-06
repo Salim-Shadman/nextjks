@@ -8,11 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"; // Import Tooltip
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Plus, MoreVertical, Edit, Trash2, Eye, LayoutGrid, LogIn } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { PageWrapper } from '@/components/layout/PageWrapper';
+import { toast } from 'sonner';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -29,16 +30,36 @@ export default function DashboardPage() {
   const utils = trpc.useUtils();
   
   const getProjectsQuery = trpc.getProjects.useQuery(undefined, { enabled: !!session });
+
   const createProjectMutation = trpc.createProject.useMutation({
-    onSuccess: () => utils.getProjects.invalidate(),
+    onSuccess: (newProject) => {
+      toast.success(`Project "${newProject.title}" created successfully!`);
+      utils.getProjects.invalidate();
+    },
+    onError: (error) => {
+      toast.error("Failed to create project", {
+        description: error.message,
+      });
+    }
   });
+
   const deleteProjectMutation = trpc.deleteProject.useMutation({
-    onSuccess: () => utils.getProjects.invalidate(),
+    onSuccess: () => {
+      toast.success("Project deleted successfully!");
+      utils.getProjects.invalidate();
+    },
+    onError: (error) => {
+      toast.error("Failed to delete project", {
+        description: error.message,
+      });
+    }
   });
 
   const handleCreateProject = () => {
     const title = prompt('Enter project title:');
-    if (title) createProjectMutation.mutate({ title });
+    if (title) {
+      createProjectMutation.mutate({ title });
+    }
   };
 
   const handleDeleteProject = (projectId: string) => {
@@ -92,7 +113,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {getProjectsQuery.data && (
+            {getProjectsQuery.data && Array.isArray(getProjectsQuery.data) && (
               <motion.div
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 variants={containerVariants}

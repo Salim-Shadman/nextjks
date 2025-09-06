@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/components/AuthProvider';
 import { TrpcProvider } from '@/components/TrpcProvider';
-import { Toaster } from 'sonner';
+import { Toaster } from 'sonner'; // Corrected import path
 
 export const metadata: Metadata = {
   title: 'Insight Flow',

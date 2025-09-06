@@ -5,7 +5,7 @@ import { createTRPCContext } from '@/server/trpc';
 
 const handler = (req: Request) =>
   fetchRequestHandler({
-    endpoint: '/api/trpc', // Corrected endpoint
+    endpoint: '/api/trpc',
     req,
     router: appRouter,
     createContext: createTRPCContext,

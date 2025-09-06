@@ -24,6 +24,7 @@
     "@radix-ui/react-tooltip": "^1.1.1",
     "@studio-freight/lenis": "^1.0.42",
     "@tanstack/react-query": "^5.45.1",
+    "@tiptap/extension-link": "^2.4.0",
     "@tiptap/html": "^2.4.0",
     "@tiptap/pm": "^2.4.0",
     "@tiptap/react": "^2.4.0",

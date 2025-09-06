@@ -3,6 +3,7 @@
 
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
 import { Toggle } from '@/components/ui/toggle';
 import { Bold, Italic, Strikethrough } from 'lucide-react';
 import { useEffect } from 'react';
@@ -49,12 +50,15 @@ export function RichTextEditor({ content, onUpdate }: RichTextEditorProps) {
   const debouncedUpdate = useDebouncedCallback(onUpdate, 1000);
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [StarterKit, Link.configure({
+      openOnClick: false,
+      autolink: true,
+    })],
     content: content,
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: 'prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg xl:prose-2xl m-5 focus:outline-none min-h-[100px]',
+        class: 'prose dark:prose-invert prose-sm sm:prose-base lg:prose-lg xl:prose-2xl m-5 focus:outline-none min-h-[100px] max-w-none',
       },
     },
     onUpdate: ({ editor }) => {

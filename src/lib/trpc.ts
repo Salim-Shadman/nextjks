@@ -1,4 +1,3 @@
-// src/lib/trpc.ts
 import { createTRPCReact } from '@trpc/react-query';
 import { AppRouter } from '@/server';
 import { httpBatchLink } from '@trpc/client';
@@ -8,12 +7,12 @@ import { getBaseUrl } from './getBaseUrl';
 // Client for React components (hooks)
 export const trpc = createTRPCReact<AppRouter>();
 
-// Client for Server Components
+// Client specifically for use in Server Components
 export const serverClient = trpc.createClient({
-  transformer: superjson,
   links: [
     httpBatchLink({
       url: `${getBaseUrl()}/api/trpc`,
+      transformer: superjson,
     }),
   ],
 });

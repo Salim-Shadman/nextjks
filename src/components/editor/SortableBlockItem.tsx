@@ -15,17 +15,19 @@ import { VideoBlock } from './VideoBlock';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 
 type StoryBlockType = inferRouterOutputs<AppRouter>['getProjectById']['storyBlocks'][number];
 
 interface SortableBlockItemProps {
   block: StoryBlockType;
   projectId: string;
+  isDragging: boolean;
 }
 
-export function SortableBlockItem({ block, projectId }: SortableBlockItemProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: block.id });
-  const utils = trpc.useUtils();
+export function SortableBlockItem({ block, projectId, isDragging }: SortableBlockItemProps) {
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: block.id });
+  const utils = trpc.useContext();
   const [isEditing, setIsEditing] = useState(false);
   const [headingText, setHeadingText] = useState(
     block.type === 'heading' ? (block.content as { text: string }).text : ''
@@ -34,7 +36,6 @@ export function SortableBlockItem({ block, projectId }: SortableBlockItemProps) 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.5 : 1,
   };
 
   const updateContentMutation = trpc.updateBlockContent.useMutation();
@@ -98,34 +99,36 @@ export function SortableBlockItem({ block, projectId }: SortableBlockItemProps) 
   };
 
   return (
-    <motion.div 
-      ref={setNodeRef} 
-      style={style} 
-      className="group relative"
-      whileHover={{ scale: 1.01 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-    >
-      <Card className="overflow-hidden">
-        <CardContent className="p-4">
-          <div className="flex flex-row items-start gap-4">
-            <div 
-              className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-            >
-              <button {...attributes} {...listeners} className="cursor-grab p-2">
-                <GripVertical className="h-5 w-5 text-muted-foreground" />
-              </button>
+    <div ref={setNodeRef} style={style} className="relative group">
+      <motion.div
+        animate={{
+          scale: isDragging ? 1.05 : 1,
+          boxShadow: isDragging ? '0px 10px 30px rgba(0, 0, 0, 0.1)' : '0px 1px 3px rgba(0, 0, 0, 0.05)',
+        }}
+        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+      >
+        <Card className={cn("overflow-hidden transition-colors", isDragging ? "bg-muted" : "bg-card")}>
+          <CardContent className="p-4">
+            <div className="flex flex-row items-start gap-4">
+              <div 
+                className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+              >
+                <button {...attributes} {...listeners} className="cursor-grab p-2 text-muted-foreground hover:text-foreground">
+                  <GripVertical className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex-1">
+                {renderContent()}
+              </div>
+              <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <Button variant="ghost" size="icon" onClick={handleDeleteBlock} disabled={deleteBlockMutation.isPending} className="h-8 w-8">
+                  <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
+                </Button>
+              </div>
             </div>
-            <div className="flex-1">
-              {renderContent()}
-            </div>
-            <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-              <Button variant="ghost" size="icon" onClick={handleDeleteBlock} disabled={deleteBlockMutation.isPending} className="h-8 w-8">
-                <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
   );
 }

@@ -4,7 +4,7 @@
 import { EditorCanvas } from '@/components/editor/EditorCanvas';
 import { EditorSidebar } from '@/components/editor/EditorSidebar';
 import { EditorHeader } from '@/components/layout/EditorHeader';
-import { PageWrapper } from '@/components/layout/PageWrapper'; // Import the PageWrapper
+import { PageWrapper } from '@/components/layout/PageWrapper';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpc } from '@/lib/trpc';
 import { useParams } from 'next/navigation';
@@ -38,11 +38,11 @@ export default function ProjectEditPage() {
 
   return (
     <PageWrapper>
-      <div className="min-h-screen flex flex-col bg-muted/40">
+      <div className="min-h-screen flex flex-col bg-muted/20"> {/* Changed background */}
         <EditorHeader projectId={project.id} projectTitle={project.title} />
         <div className="flex flex-1 overflow-hidden">
           <EditorSidebar projectId={project.id} datasetUrl={project.datasetUrl} />
-          <main className="flex-1 overflow-y-auto p-8 md:p-16">
+          <main className="flex-1 overflow-y-auto p-8 md:p-12">
             <EditorCanvas projectId={project.id} blocks={project.storyBlocks} />
           </main>
         </div>

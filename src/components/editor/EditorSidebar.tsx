@@ -5,6 +5,7 @@ import { trpc } from '@/lib/trpc';
 import { Plus, Type, FileText, BarChart2, Image as ImageIcon, Film } from 'lucide-react';
 import { FileUpload } from './FileUpload';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { toast } from 'sonner';
 
 interface EditorSidebarProps {
   projectId: string;
@@ -12,8 +13,41 @@ interface EditorSidebarProps {
 }
 
 export function EditorSidebar({ projectId, datasetUrl }: EditorSidebarProps) {
-  const addBlockMutation = trpc.addStoryBlock.useMutation();
-  const utils = trpc.useUtils();
+  const utils = trpc.useContext();
+  
+  const addBlockMutation = trpc.addStoryBlock.useMutation({
+    onMutate: async (newBlock) => {
+      await utils.getProjectById.cancel({ id: projectId });
+      const previousProjectData = utils.getProjectById.getData({ id: projectId });
+
+      if (previousProjectData) {
+        const optimisticBlock = {
+          id: `optimistic-${Date.now()}`,
+          projectId: newBlock.projectId,
+          type: newBlock.type,
+          content: newBlock.content,
+          order: previousProjectData.storyBlocks.length,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+        utils.getProjectById.setData({ id: projectId }, {
+          ...previousProjectData,
+          storyBlocks: [...previousProjectData.storyBlocks, optimisticBlock],
+        });
+      }
+      return { previousProjectData };
+    },
+    onError: (err, newBlock, context) => {
+      if (context?.previousProjectData) {
+        utils.getProjectById.setData({ id: projectId }, context.previousProjectData);
+      }
+      toast.error("Failed to add block", { description: err.message });
+    },
+    onSettled: () => {
+      utils.getProjectById.invalidate({ id: projectId });
+    },
+  });
+
 
   const handleAddBlock = (type: 'heading' | 'paragraph' | 'chart' | 'image' | 'video') => {
     let content: any;
@@ -29,14 +63,14 @@ export function EditorSidebar({ projectId, datasetUrl }: EditorSidebarProps) {
       projectId: projectId,
       type: type,
       content: content,
-    }, { onSuccess: () => utils.getProjectById.invalidate({ id: projectId }) });
+    });
   };
 
   return (
     <TooltipProvider>
       <aside className="w-80 h-screen bg-card border-r flex flex-col p-4 space-y-6">
         <div>
-          <h2 className="text-lg font-semibold px-2">Dataset</h2>
+          <h2 className="text-lg font-semibold px-2 mb-2">Dataset</h2>
           {datasetUrl ? (
             <div className="flex flex-col gap-2">
               <Tooltip>
@@ -57,11 +91,11 @@ export function EditorSidebar({ projectId, datasetUrl }: EditorSidebarProps) {
         <hr />
         <div className="space-y-1">
           <h2 className="text-lg font-semibold mb-2 px-2">Add Blocks</h2>
-          <Button onClick={() => handleAddBlock('heading')} disabled={addBlockMutation.isPending} className="w-full justify-start" variant="ghost"><Plus className="mr-2 h-4 w-4" /> Add Heading</Button>
-          <Button onClick={() => handleAddBlock('paragraph')} disabled={addBlockMutation.isPending} className="w-full justify-start" variant="ghost"><Type className="mr-2 h-4 w-4" /> Add Paragraph</Button>
-          <Button onClick={() => handleAddBlock('chart')} disabled={addBlockMutation.isPending || !datasetUrl} className="w-full justify-start" variant="ghost"><BarChart2 className="mr-2 h-4 w-4" /> Add Chart</Button>
-          <Button onClick={() => handleAddBlock('image')} disabled={addBlockMutation.isPending} className="w-full justify-start" variant="ghost"><ImageIcon className="mr-2 h-4 w-4" /> Add Image</Button>
-          <Button onClick={() => handleAddBlock('video')} disabled={addBlockMutation.isPending} className="w-full justify-start" variant="ghost"><Film className="mr-2 h-4 w-4" /> Add Video</Button>
+          <Button onClick={() => handleAddBlock('heading')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><Plus className="mr-2 h-4 w-4" /> Add Heading</Button>
+          <Button onClick={() => handleAddBlock('paragraph')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><Type className="mr-2 h-4 w-4" /> Add Paragraph</Button>
+          <Button onClick={() => handleAddBlock('chart')} disabled={addBlockMutation.isLoading || !datasetUrl} className="w-full justify-start" variant="ghost"><BarChart2 className="mr-2 h-4 w-4" /> Add Chart</Button>
+          <Button onClick={() => handleAddBlock('image')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><ImageIcon className="mr-2 h-4 w-4" /> Add Image</Button>
+          <Button onClick={() => handleAddBlock('video')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><Film className="mr-2 h-4 w-4" /> Add Video</Button>
         </div>
       </aside>
     </TooltipProvider>

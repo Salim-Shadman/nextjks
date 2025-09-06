@@ -2,6 +2,7 @@
 
 import { generateHTML } from '@tiptap/html';
 import StarterKit from '@tiptap/starter-kit';
+import Link from '@tiptap/extension-link';
 import { useMemo } from 'react';
 import { ChartView } from './ChartView';
 import { trpc } from '@/lib/trpc';
@@ -28,7 +29,7 @@ export function BlockRenderer(props: { block: Block }) {
   if (block.type === 'paragraph') {
     if (!block.content) return null;
     const html = useMemo(
-      () => generateHTML(block.content as Record<string, any>, [StarterKit]),
+      () => generateHTML(block.content as Record<string, any>, [StarterKit, Link]),
       [block.content]
     );
     return <div className="prose dark:prose-invert" dangerouslySetInnerHTML={{ __html: html }} />;

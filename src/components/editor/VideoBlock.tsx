@@ -4,14 +4,9 @@ import { useState, useEffect } from 'react';
 import ReactPlayer from 'react-player';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Film, Loader2 } from 'lucide-react';
+import { Film, Loader2, XCircle } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-
-function extractUrlFromString(text: string): string | null {
-  const urlRegex = /(https?:\/\/[^\s"']+)/g;
-  const found = text.match(urlRegex);
-  return found ? found[0] : null;
-}
+import { toast } from 'sonner';
 
 interface VideoBlockProps {
   block: {
@@ -26,23 +21,34 @@ interface VideoBlockProps {
 export function VideoBlock({ block, onContentUpdate }: VideoBlockProps) {
   const [inputValue, setInputValue] = useState(block.content?.url ?? '');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Sync external changes (e.g., from server) with internal state
     if (block.content?.url !== inputValue) {
       setInputValue(block.content?.url ?? '');
     }
   }, [block.content?.url]);
 
   const handleUrlChange = async () => {
-    const extractedUrl = extractUrlFromString(inputValue);
-    if (extractedUrl) {
-      setLoading(true);
-      await onContentUpdate({ url: extractedUrl });
-      setLoading(false);
-    } else {
-      console.error('No valid URL found in the input.');
+    if (!inputValue) {
+      setError('Please enter a video URL.');
+      return;
     }
+
+    setLoading(true);
+    setError(null);
+
+    const isSupported = ReactPlayer.canPlay(inputValue);
+
+    if (isSupported) {
+      await onContentUpdate({ url: inputValue });
+      toast.success('Video embedded successfully!');
+    } else {
+      setError('Invalid or unsupported video URL. Please check the link and try again.');
+      toast.error('Invalid or unsupported video URL.');
+    }
+
+    setLoading(false);
   };
 
   const videoUrl = block.content?.url ?? null;
@@ -69,22 +75,31 @@ export function VideoBlock({ block, onContentUpdate }: VideoBlockProps) {
       </div>
       <h3 className="mt-4 text-lg font-medium">Embed a Video</h3>
       <p className="text-sm text-muted-foreground mt-1 mb-4">
-        Paste a YouTube or Vimeo link/embed code below.
+        Paste a YouTube, Vimeo, or other supported video link below.
       </p>
       <div className="flex items-center gap-2">
         <Input
-          placeholder="Paste link here..."
+          placeholder="https://www.youtube.com/watch?v=..."
           value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
+          onChange={(e) => {
+            setInputValue(e.target.value);
+            setError(null);
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter') handleUrlChange();
           }}
           disabled={loading}
+          className={error ? 'border-destructive' : ''}
         />
         <Button onClick={handleUrlChange} disabled={loading}>
           {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Embed'}
         </Button>
       </div>
+      {error && (
+        <p className="text-sm text-destructive mt-2 flex items-center justify-center gap-1">
+          <XCircle className="h-4 w-4" /> {error}
+        </p>
+      )}
     </div>
   );
 }

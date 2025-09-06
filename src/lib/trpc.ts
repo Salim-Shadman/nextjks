@@ -2,6 +2,7 @@
 import { createTRPCReact } from '@trpc/react-query';
 import { createTRPCClient, httpBatchLink } from '@trpc/client';
 import type { AppRouter } from '@/server';
+import superjson from 'superjson';
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -10,13 +11,15 @@ const getBaseUrl = () => {
     return '';
   }
   // This is a server-side environment, so we need a full URL
-  return process.env.NEXT_PUBLIC_VERCEL_URL ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` : 'http://localhost:3000';
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return `http://localhost:${process.env.PORT ?? 3000}`;
 };
 
 export const serverClient = createTRPCClient<AppRouter>({
   links: [
     httpBatchLink({
-      url: `${getBaseUrl()}/trpc`,
+      url: `${getBaseUrl()}/api/trpc`, // Corrected the URL
     }),
   ],
+  transformer: superjson,
 });

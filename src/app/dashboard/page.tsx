@@ -27,7 +27,7 @@ const itemVariants = {
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const utils = trpc.useContext(); // The hook is useContext in v10
+  const utils = trpc.useUtils();
 
   const getProjectsQuery = trpc.getProjects.useQuery(undefined, { enabled: !!session });
 
@@ -92,7 +92,7 @@ export default function DashboardPage() {
           <PageWrapper>
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-3xl font-bold tracking-tight">Your Projects</h2>
-              <Button onClick={handleCreateProject} disabled={createProjectMutation.isLoading}>
+              <Button onClick={handleCreateProject} disabled={createProjectMutation.isPending}>
                 <Plus className="mr-2 h-4 w-4" /> Create New Project
               </Button>
             </div>

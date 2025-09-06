@@ -2,7 +2,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/components/AuthProvider';
-import TrpcProvider from '@/components/TrpcProvider'; // Correctly import the default export
+import { TrpcProvider } from '@/components/TrpcProvider';
 import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
@@ -16,12 +16,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
-      <body>
+    <html lang="en" suppressHydrationWarning>
+      <body className="dark" style={{ colorScheme: 'dark' }}>
         <AuthProvider>
-          <TrpcProvider>{children}</TrpcProvider>
+          <TrpcProvider>
+            {children}
+            <Toaster richColors position="top-right" />
+          </TrpcProvider>
         </AuthProvider>
-        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

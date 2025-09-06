@@ -27,8 +27,8 @@ const itemVariants = {
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const utils = trpc.useUtils();
-  
+  const utils = trpc.useContext(); // The hook is useContext in v10
+
   const getProjectsQuery = trpc.getProjects.useQuery(undefined, { enabled: !!session });
 
   const createProjectMutation = trpc.createProject.useMutation({
@@ -92,7 +92,7 @@ export default function DashboardPage() {
           <PageWrapper>
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-3xl font-bold tracking-tight">Your Projects</h2>
-              <Button onClick={handleCreateProject} disabled={createProjectMutation.isPending}>
+              <Button onClick={handleCreateProject} disabled={createProjectMutation.isLoading}>
                 <Plus className="mr-2 h-4 w-4" /> Create New Project
               </Button>
             </div>
@@ -113,7 +113,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {getProjectsQuery.data && Array.isArray(getProjectsQuery.data) && (
+            {Array.isArray(getProjectsQuery.data) && getProjectsQuery.data.length > 0 && (
               <motion.div
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 variants={containerVariants}

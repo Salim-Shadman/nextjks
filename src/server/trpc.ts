@@ -5,11 +5,11 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import superjson from 'superjson';
 import { ZodError } from 'zod';
 
-// Context is created for each request and is available in all procedures
-export const createTRPCContext = async () => {
+export const createTRPCContext = async (opts: { headers: Headers }) => {
   const session = await getServerSession(authOptions);
   return {
     session,
+    headers: opts.headers,
   };
 };
 
@@ -20,7 +20,8 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
       ...shape,
       data: {
         ...shape.data,
-        zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+        zodError:
+          error.cause instanceof ZodError ? error.cause.flatten() : null,
       },
     };
   },
@@ -29,11 +30,9 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
 export const router = t.router;
 export const middleware = t.middleware;
 
-// Unprotected procedure for public use
 export const publicProcedure = t.procedure;
 
-// Middleware to enforce user authentication
-const enforceUserIsAuthed = middleware(({ ctx, next }) => {
+const enforceUserIsAuthed = t.middleware(({ ctx, next }) => {
   if (!ctx.session || !ctx.session.user) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });
   }
@@ -44,5 +43,4 @@ const enforceUserIsAuthed = middleware(({ ctx, next }) => {
   });
 });
 
-// Protected procedure for authenticated users
 export const protectedProcedure = t.procedure.use(enforceUserIsAuthed);

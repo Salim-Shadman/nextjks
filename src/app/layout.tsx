@@ -2,8 +2,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { AuthProvider } from '@/components/AuthProvider';
-import { TrpcProvider } from '@/components/TrpcProvider';
-import { Toaster } from 'sonner'; // Corrected import path
+import TrpcProvider from '@/components/TrpcProvider'; // Correctly import the default export
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: 'Insight Flow',
@@ -19,11 +19,9 @@ export default function RootLayout({
     <html lang="en" className="dark" style={{ colorScheme: 'dark' }}>
       <body>
         <AuthProvider>
-          <TrpcProvider>
-            {children}
-            <Toaster richColors position="top-right" />
-          </TrpcProvider>
+          <TrpcProvider>{children}</TrpcProvider>
         </AuthProvider>
+        <Toaster richColors position="top-right" />
       </body>
     </html>
   );

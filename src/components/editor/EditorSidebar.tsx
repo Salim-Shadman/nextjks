@@ -13,44 +13,29 @@ interface EditorSidebarProps {
   datasetUrl: string | null | undefined;
 }
 
+const blockTypes = [
+  { type: 'heading', label: 'Heading', icon: Type },
+  { type: 'paragraph', label: 'Paragraph', icon: FileText },
+  { type: 'chart', label: 'Chart', icon: BarChart2 },
+  { type: 'image', label: 'Image', icon: ImageIcon },
+  { type: 'video', label: 'Video', icon: Film },
+] as const;
+
 export function EditorSidebar({ projectId, datasetUrl }: EditorSidebarProps) {
   const utils = trpc.useContext();
 
   const addBlockMutation = trpc.addStoryBlock.useMutation({
-    onMutate: async (newBlock) => {
-      await utils.getProjectById.cancel({ id: projectId });
-      const previousProjectData = utils.getProjectById.getData({ id: projectId });
-
-      if (previousProjectData) {
-        const optimisticBlock = {
-          id: `optimistic-${Date.now()}`,
-          projectId: newBlock.projectId,
-          type: newBlock.type,
-          content: newBlock.content,
-          order: previousProjectData.storyBlocks.length,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        };
-        utils.getProjectById.setData({ id: projectId }, {
-          ...previousProjectData,
-          storyBlocks: [...previousProjectData.storyBlocks, optimisticBlock],
-        });
-      }
-      return { previousProjectData };
-    },
-    onError: (err, newBlock, context) => {
-      if (context?.previousProjectData) {
-        utils.getProjectById.setData({ id: projectId }, context.previousProjectData);
-      }
-      toast.error("Failed to add block", { description: err.message });
-    },
-    onSettled: () => {
+    onSuccess: () => {
+      toast.success("Block added successfully!");
       utils.getProjectById.invalidate({ id: projectId });
+    },
+    onError: (err) => {
+      toast.error("Failed to add block", { description: err.message });
     },
   });
 
 
-  const handleAddBlock = (type: 'heading' | 'paragraph' | 'chart' | 'image' | 'video') => {
+  const handleAddBlock = (type: typeof blockTypes[number]['type']) => {
     let content: any;
     switch (type) {
       case 'heading': content = { text: 'New Heading' }; break;
@@ -68,8 +53,8 @@ export function EditorSidebar({ projectId, datasetUrl }: EditorSidebarProps) {
   };
 
   return (
-    <TooltipProvider>
-      <aside className="w-72 bg-card border-r flex flex-col p-4 space-y-6">
+    <TooltipProvider delayDuration={0}>
+      <aside className="sticky top-16 h-[calc(100vh-4rem)] w-72 bg-card border-r flex flex-col p-4 space-y-6 overflow-y-auto">
         <div>
           <h2 className="text-lg font-semibold px-2 mb-2">Dataset</h2>
           {datasetUrl ? (
@@ -89,39 +74,32 @@ export function EditorSidebar({ projectId, datasetUrl }: EditorSidebarProps) {
             <FileUpload projectId={projectId} currentDatasetUrl={null} />
           )}
         </div>
-        <hr />
-        <div className="space-y-1">
+        <div className="flex-1 space-y-1">
           <h2 className="text-lg font-semibold mb-2 px-2">Add Blocks</h2>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button onClick={() => handleAddBlock('heading')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><Plus className="mr-2 h-4 w-4" /> Add Heading</Button>
-            </TooltipTrigger>
-            <TooltipContent side="right"><p>Add a new heading block</p></TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button onClick={() => handleAddBlock('paragraph')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><Type className="mr-2 h-4 w-4" /> Add Paragraph</Button>
-            </TooltipTrigger>
-            <TooltipContent side="right"><p>Add a new paragraph block</p></TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button onClick={() => handleAddBlock('chart')} disabled={addBlockMutation.isLoading || !datasetUrl} className="w-full justify-start" variant="ghost"><BarChart2 className="mr-2 h-4 w-4" /> Add Chart</Button>
-            </TooltipTrigger>
-            <TooltipContent side="right"><p>Add a new chart block</p></TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-               <Button onClick={() => handleAddBlock('image')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><ImageIcon className="mr-2 h-4 w-4" /> Add Image</Button>
-            </TooltipTrigger>
-            <TooltipContent side="right"><p>Add a new image block</p></TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button onClick={() => handleAddBlock('video')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><Film className="mr-2 h-4 w-4" /> Add Video</Button>
-            </TooltipTrigger>
-            <TooltipContent side="right"><p>Add a new video block</p></TooltipContent>
-          </Tooltip>
+          {blockTypes.map((block) => {
+            const isDisabled = addBlockMutation.isPending || (block.type === 'chart' && !datasetUrl);
+            return (
+              <Tooltip key={block.type}>
+                <TooltipTrigger asChild>
+                  <div className="w-full">
+                    <Button 
+                      onClick={() => handleAddBlock(block.type)} 
+                      disabled={isDisabled} 
+                      className="w-full justify-start" 
+                      variant="ghost"
+                    >
+                      <block.icon className="mr-2 h-4 w-4" /> 
+                      {block.label}
+                    </Button>
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right">
+                  <p>Add a new {block.label.toLowerCase()} block.</p>
+                  {block.type === 'chart' && !datasetUrl && <p className="text-xs text-destructive">A dataset must be uploaded first.</p>}
+                </TooltipContent>
+              </Tooltip>
+            );
+          })}
         </div>
       </aside>
     </TooltipProvider>

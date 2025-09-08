@@ -8,16 +8,18 @@ import { PageWrapper } from '@/components/layout/PageWrapper';
 import { Skeleton } from '@/components/ui/skeleton';
 import { trpc } from '@/lib/trpc';
 import { useParams } from 'next/navigation';
+import { useState } from 'react';
 
 export default function ProjectEditPage() {
   const params = useParams();
   const projectId = params.projectId as string;
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const { data: project, isLoading, isError } = trpc.getProjectById.useQuery(
     { id: projectId },
     { 
       enabled: !!projectId,
-      retry: 1, // Don't retry indefinitely on error
+      retry: 1,
     }
   );
 
@@ -26,8 +28,8 @@ export default function ProjectEditPage() {
       <div className="h-screen w-full flex flex-col">
         <Skeleton className="h-16 w-full flex-shrink-0" />
         <div className="flex flex-1 overflow-hidden">
-          <Skeleton className="h-full w-72 flex-shrink-0" />
-          <div className="flex-1 p-16 overflow-y-auto">
+          <Skeleton className="h-full w-72 hidden md:block flex-shrink-0" />
+          <div className="flex-1 p-8 md:p-16 overflow-y-auto">
             <div className="max-w-3xl mx-auto space-y-8">
               <Skeleton className="h-24 w-full" />
               <Skeleton className="h-48 w-full" />
@@ -55,9 +57,18 @@ export default function ProjectEditPage() {
   return (
     <PageWrapper>
       <div className="min-h-screen flex flex-col bg-background">
-        <EditorHeader projectId={project.id} projectTitle={project.title} />
-        <div className="flex-1 flex items-start">
-          <EditorSidebar projectId={project.id} datasetUrl={project.datasetUrl} />
+        <EditorHeader 
+          projectId={project.id} 
+          projectTitle={project.title}
+          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+        />
+        <div className="flex-1 flex items-start relative">
+          <EditorSidebar 
+            projectId={project.id} 
+            datasetUrl={project.datasetUrl}
+            isOpen={isSidebarOpen}
+            onClose={() => setIsSidebarOpen(false)}
+          />
           <main className="flex-1 h-[calc(100vh-4rem)] overflow-y-auto p-4 md:p-8 lg:p-12 bg-muted/40">
             <EditorCanvas projectId={project.id} blocks={project.storyBlocks} />
           </main>

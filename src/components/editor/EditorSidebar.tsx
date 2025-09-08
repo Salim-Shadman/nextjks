@@ -3,14 +3,17 @@
 
 import { Button } from '@/components/ui/button';
 import { trpc } from '@/lib/trpc';
-import { Plus, Type, FileText, BarChart2, Image as ImageIcon, Film } from 'lucide-react';
+import { FileText, BarChart2, Image as ImageIcon, Film, Type, X } from 'lucide-react';
 import { FileUpload } from './FileUpload';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface EditorSidebarProps {
   projectId: string;
   datasetUrl: string | null | undefined;
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 const blockTypes = [
@@ -21,8 +24,8 @@ const blockTypes = [
   { type: 'video', label: 'Video', icon: Film },
 ] as const;
 
-export function EditorSidebar({ projectId, datasetUrl }: EditorSidebarProps) {
-  const utils = trpc.useContext();
+export function EditorSidebar({ projectId, datasetUrl, isOpen, onClose }: EditorSidebarProps) {
+  const utils = trpc.useUtils();
 
   const addBlockMutation = trpc.addStoryBlock.useMutation({
     onSuccess: () => {
@@ -54,7 +57,26 @@ export function EditorSidebar({ projectId, datasetUrl }: EditorSidebarProps) {
 
   return (
     <TooltipProvider delayDuration={0}>
-      <aside className="sticky top-16 h-[calc(100vh-4rem)] w-72 bg-card border-r flex flex-col p-4 space-y-6 overflow-y-auto">
+      {/* Overlay for mobile view */}
+      <div 
+        className={cn("fixed inset-0 bg-black/50 z-30 md:hidden", isOpen ? "block" : "hidden")}
+        onClick={onClose}
+      />
+      <aside className={cn(
+        "bg-card border-r flex flex-col p-4 space-y-6 transition-transform duration-300 ease-in-out z-40",
+        // Mobile view: fixed, off-screen by default
+        "fixed top-0 left-0 h-full w-72 md:w-auto md:h-auto md:static",
+        isOpen ? "translate-x-0" : "-translate-x-full",
+        // Desktop view: sticky, in-flow
+        "md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:w-72 md:translate-x-0"
+      )}>
+        <div className="flex items-center justify-between md:hidden">
+          <h2 className="text-lg font-semibold">Menu</h2>
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        
         <div>
           <h2 className="text-lg font-semibold px-2 mb-2">Dataset</h2>
           {datasetUrl ? (

@@ -3,16 +3,25 @@ import { z } from 'zod';
 import { publicProcedure, protectedProcedure, router } from './trpc';
 import prisma from '@/lib/prisma';
 import Papa from 'papaparse';
+import { TRPCError } from '@trpc/server';
 
 export const appRouter = router({
+  // --- Project Procedures ---
   getProjects: protectedProcedure.query(async ({ ctx }) => {
-    return prisma.project.findMany({ where: { userId: ctx.session.user.id } });
+    return prisma.project.findMany({ 
+      where: { userId: ctx.session.user.id },
+      orderBy: { updatedAt: 'desc' }
+    });
   }),
+
   createProject: protectedProcedure
-    .input(z.object({ title: z.string() }))
+    .input(z.object({ title: z.string().min(1, "Title is required.") }))
     .mutation(async ({ ctx, input }) => {
-      return prisma.project.create({ data: { title: input.title, userId: ctx.session.user.id } });
+      return prisma.project.create({ 
+        data: { title: input.title, userId: ctx.session.user.id } 
+      });
     }),
+
   getProjectById: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
@@ -20,10 +29,45 @@ export const appRouter = router({
         where: { id: input.id, userId: ctx.session.user.id },
         include: { storyBlocks: { orderBy: { order: 'asc' } } },
       });
-      if (!project) throw new Error('Project not found');
+      if (!project) {
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Project not found.' });
+      }
       return project;
     }),
-  // NEW: Public procedure for non-authenticated users
+  
+  updateProjectTitle: protectedProcedure
+    .input(z.object({ projectId: z.string(), title: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const project = await prisma.project.updateMany({
+        where: {
+          id: input.projectId,
+          userId: ctx.session.user.id,
+        },
+        data: {
+          title: input.title,
+        },
+      });
+
+      if (project.count === 0) {
+        throw new TRPCError({ code: 'FORBIDDEN', message: 'Could not update project.' });
+      }
+      return { success: true };
+    }),
+
+  deleteProject: protectedProcedure
+    .input(z.object({ projectId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      // The schema is set to cascade delete, so blocks will be deleted too.
+      await prisma.project.delete({
+        where: { 
+          id: input.projectId,
+          userId: ctx.session.user.id,
+        },
+      });
+      return { success: true };
+    }),
+
+  // --- Public Project Procedure ---
   getPublicProjectById: publicProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ input }) => {
@@ -33,39 +77,94 @@ export const appRouter = router({
       });
       return project;
     }),
+
+  // --- Story Block Procedures ---
   addStoryBlock: protectedProcedure
     .input(z.object({ projectId: z.string(), type: z.string(), content: z.any() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // First, verify the user owns the project they're adding a block to
+      const project = await prisma.project.findUnique({ where: { id: input.projectId }});
+      if (!project || project.userId !== ctx.session.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+
       const lastBlock = await prisma.storyBlock.findFirst({
         where: { projectId: input.projectId },
         orderBy: { order: 'desc' },
       });
+
       const newOrder = lastBlock ? lastBlock.order + 1 : 0;
+      
       return prisma.storyBlock.create({
         data: { ...input, order: newOrder },
       });
     }),
+
   updateBlockOrder: protectedProcedure
     .input(z.object({ projectId: z.string(), orderedIds: z.array(z.string()) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ ctx, input }) => {
+      // Verify user owns the project
+      const project = await prisma.project.findUnique({ where: { id: input.projectId }});
+      if (!project || project.userId !== ctx.session.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+
       const transactions = input.orderedIds.map((id, index) =>
         prisma.storyBlock.update({ where: { id }, data: { order: index } })
       );
       await prisma.$transaction(transactions);
       return { success: true };
     }),
+
   updateBlockContent: protectedProcedure
     .input(z.object({ blockId: z.string(), content: z.any() }))
-    .mutation(async ({ input }) => {
-      await prisma.storyBlock.update({ where: { id: input.blockId }, data: { content: input.content } });
+    .mutation(async ({ ctx, input }) => {
+      const blockToUpdate = await prisma.storyBlock.findUnique({
+        where: { id: input.blockId },
+        select: { project: { select: { userId: true }}}
+      });
+
+      if(blockToUpdate?.project.userId !== ctx.session.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+      
+      await prisma.storyBlock.update({ 
+        where: { id: input.blockId }, 
+        data: { content: input.content } 
+      });
+
       return { success: true };
     }),
+
+  deleteStoryBlock: protectedProcedure
+    .input(z.object({ blockId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const blockToDelete = await prisma.storyBlock.findUnique({
+        where: { id: input.blockId },
+        select: { project: { select: { userId: true }}}
+      });
+      
+      if(blockToDelete?.project.userId !== ctx.session.user.id) {
+        throw new TRPCError({ code: 'FORBIDDEN' });
+      }
+
+      await prisma.storyBlock.delete({
+        where: { id: input.blockId },
+      });
+      return { success: true };
+    }),
+
+  // --- Dataset Procedures ---
   linkDatasetToProject: protectedProcedure
     .input(z.object({ projectId: z.string(), fileUrl: z.string() }))
-    .mutation(async ({ input }) => {
-      await prisma.project.update({ where: { id: input.projectId }, data: { datasetUrl: input.fileUrl } });
+    .mutation(async ({ ctx, input }) => {
+      await prisma.project.updateMany({ 
+        where: { id: input.projectId, userId: ctx.session.user.id }, 
+        data: { datasetUrl: input.fileUrl } 
+      });
       return { success: true };
     }),
+
   getProjectDataset: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ ctx, input }) => {
@@ -73,37 +172,19 @@ export const appRouter = router({
         where: { id: input.projectId, userId: ctx.session.user.id },
       });
       if (!project || !project.datasetUrl) {
-        throw new Error('Dataset not found for this project.');
+        throw new TRPCError({ code: 'NOT_FOUND', message: 'Dataset not found for this project.'});
       }
       const response = await fetch(project.datasetUrl);
       const csvText = await response.text();
       const parsedData = Papa.parse(csvText, {
         header: true,
         skipEmptyLines: true,
+        dynamicTyping: true, // Automatically convert numbers and booleans
       });
       return parsedData.data;
     }),
-  deleteProject: protectedProcedure
-    .input(z.object({ projectId: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      await prisma.project.delete({
-        where: { 
-          id: input.projectId,
-          userId: ctx.session.user.id,
-        },
-      });
-      return { success: true };
-    }),
-  deleteStoryBlock: protectedProcedure
-    .input(z.object({ blockId: z.string() }))
-    .mutation(async ({ input }) => {
-      await prisma.storyBlock.delete({
-        where: { id: input.blockId },
-      });
-      return { success: true };
-    }),
 
-  // NEW: Procedure to search for images on Unsplash
+  // --- Unsplash API Procedure ---
   searchUnsplashImages: protectedProcedure
     .input(z.object({ query: z.string() }))
     .query(async ({ input }) => {
@@ -121,8 +202,10 @@ export const appRouter = router({
           },
         }
       );
+      if (!response.ok) {
+        throw new Error('Failed to fetch images from Unsplash.');
+      }
       const data = await response.json();
-      // We only return the fields we need to the client
       return data.results.map((img: any) => ({
         id: img.id,
         url: img.urls.regular,

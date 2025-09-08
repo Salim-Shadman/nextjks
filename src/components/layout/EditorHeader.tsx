@@ -3,23 +3,26 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Eye, Share2, Check, Save } from 'lucide-react';
+import { ArrowLeft, Eye, Share2, Check, Menu } from 'lucide-react';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { trpc } from '@/lib/trpc';
 import { Input } from '../ui/input';
 
+// The props interface is updated here
 interface EditorHeaderProps {
   projectId: string;
   projectTitle: string;
+  onToggleSidebar: () => void; // This new prop is added
 }
 
-export function EditorHeader({ projectId, projectTitle }: EditorHeaderProps) {
+export function EditorHeader({ projectId, projectTitle, onToggleSidebar }: EditorHeaderProps) {
   const [isCopied, setIsCopied] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [title, setTitle] = useState(projectTitle);
   const utils = trpc.useUtils();
 
+  // This mutation needs to be added to your tRPC router in `src/server/index.ts`
   const updateTitleMutation = trpc.updateProjectTitle.useMutation({
     onSuccess: () => {
       toast.success("Project title updated.");
@@ -27,7 +30,7 @@ export function EditorHeader({ projectId, projectTitle }: EditorHeaderProps) {
     },
     onError: (error) => {
       toast.error("Failed to update title.", { description: error.message });
-      setTitle(projectTitle); // Revert on error
+      setTitle(projectTitle);
     }
   });
 
@@ -54,15 +57,23 @@ export function EditorHeader({ projectId, projectTitle }: EditorHeaderProps) {
   return (
     <header className="bg-card border-b sticky top-0 z-20">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="icon" asChild>
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* This button is for mobile view to toggle the sidebar */}
+          <Button variant="outline" size="icon" className="md:hidden" onClick={onToggleSidebar}>
+            <Menu className="h-4 w-4" />
+            <span className="sr-only">Toggle Sidebar</span>
+          </Button>
+          
+          {/* This button is for desktop view to go back */}
+          <Button variant="outline" size="icon" asChild className="hidden md:inline-flex">
             <Link href="/dashboard">
               <ArrowLeft className="h-4 w-4" />
               <span className="sr-only">Back to Dashboard</span>
             </Link>
           </Button>
+
           <div className="flex flex-col">
-            <p className="text-sm text-muted-foreground">Editor</p>
+            <p className="text-sm text-muted-foreground hidden md:block">Editor</p>
             {isEditingTitle ? (
               <div className="flex items-center gap-2">
                 <Input
@@ -92,7 +103,7 @@ export function EditorHeader({ projectId, projectTitle }: EditorHeaderProps) {
           <Button asChild>
             <Link href={`/project/${projectId}`} target="_blank">
               <Eye className="mr-2 h-4 w-4" />
-              Preview
+              <span className="hidden md:inline">Preview</span>
             </Link>
           </Button>
         </div>

@@ -1,3 +1,4 @@
+// src/components/editor/SortableBlockItem.tsx
 'use client';
 
 import { useState } from 'react';
@@ -48,7 +49,7 @@ export function SortableBlockItem({ block, projectId, isDragging }: SortableBloc
   const handleContentUpdate = (newContent: any) => {
     updateContentMutation.mutate({ blockId: block.id, content: newContent });
   };
-  
+
   const handleDeleteBlock = () => {
     if (window.confirm('Are you sure you want to delete this block?')) {
       deleteBlockMutation.mutate({ blockId: block.id });
@@ -101,16 +102,17 @@ export function SortableBlockItem({ block, projectId, isDragging }: SortableBloc
   return (
     <div ref={setNodeRef} style={style} className="relative group">
       <motion.div
-        animate={{
-          scale: isDragging ? 1.05 : 1,
-          boxShadow: isDragging ? '0px 10px 30px rgba(0, 0, 0, 0.1)' : '0px 1px 3px rgba(0, 0, 0, 0.05)',
+        whileHover={{
+          scale: 1.02,
+          boxShadow: '0px 8px 25px rgba(0, 0, 0, 0.1)',
         }}
+        animate={{ scale: isDragging ? 1.05 : 1 }}
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
       >
         <Card className={cn("overflow-hidden transition-colors", isDragging ? "bg-muted" : "bg-card")}>
           <CardContent className="p-4">
             <div className="flex flex-row items-start gap-4">
-              <div 
+              <div
                 className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
               >
                 <button {...attributes} {...listeners} className="cursor-grab p-2 text-muted-foreground hover:text-foreground">

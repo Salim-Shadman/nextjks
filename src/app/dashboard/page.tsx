@@ -27,7 +27,7 @@ const itemVariants = {
 export default function DashboardPage() {
   const { data: session } = useSession();
   const utils = trpc.useUtils();
-
+  
   const getProjectsQuery = trpc.getProjects.useQuery(undefined, { enabled: !!session });
 
   const createProjectMutation = trpc.createProject.useMutation({
@@ -120,8 +120,8 @@ export default function DashboardPage() {
                 animate="visible"
               >
                 {getProjectsQuery.data.map((project) => (
-                  <motion.div key={project.id} variants={itemVariants} whileHover={{ scale: 1.03 }} transition={{ type: 'spring', stiffness: 300 }}>
-                    <Card className="flex flex-col h-full shadow-md hover:shadow-xl transition-shadow">
+                  <motion.div key={project.id} variants={itemVariants} whileHover={{ y: -5 }} transition={{ type: 'spring', stiffness: 300 }}>
+                    <Card className="flex flex-col h-full shadow-md hover:shadow-lg transition-shadow bg-card/80 backdrop-blur-sm border-white/10 hover:border-white/20">
                       <CardHeader className="flex-row items-start justify-between">
                         <div>
                           <Tooltip>

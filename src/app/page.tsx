@@ -1,4 +1,3 @@
-// src/app/page.tsx
 import { LandingHeader } from "@/components/layout/LandingHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -11,8 +10,8 @@ export default function HomePage() {
       <LandingHeader />
       
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="container mx-auto text-center py-20 md:py-32">
+        <section className="container mx-auto text-center py-20 md:py-32 relative">
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/10 to-transparent -z-10" />
           <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter mb-4">
             Turn Data into a Story
           </h1>
@@ -24,14 +23,13 @@ export default function HomePage() {
           </Button>
         </section>
 
-        {/* Features Section */}
-        <section className="bg-muted/40 py-20">
+        <section className="py-20">
           <div className="container mx-auto">
             <h2 className="text-3xl font-bold text-center mb-12">
               Powerful Features, Simple Interface
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <Card>
+              <Card className="border-primary/20 hover:border-primary transition-colors">
                 <CardHeader>
                   <BarChart2 className="h-8 w-8 mb-4 text-primary" />
                   <CardTitle>Interactive Charts</CardTitle>
@@ -40,7 +38,7 @@ export default function HomePage() {
                   </CardDescription>
                 </CardHeader>
               </Card>
-              <Card>
+              <Card className="border-primary/20 hover:border-primary transition-colors">
                 <CardHeader>
                   <FileUp className="h-8 w-8 mb-4 text-primary" />
                   <CardTitle>Simple Data Upload</CardTitle>
@@ -49,7 +47,7 @@ export default function HomePage() {
                   </CardDescription>
                 </CardHeader>
               </Card>
-              <Card>
+              <Card className="border-primary/20 hover:border-primary transition-colors">
                 <CardHeader>
                   <Zap className="h-8 w-8 mb-4 text-primary" />
                   <CardTitle>Animated Storytelling</CardTitle>
@@ -63,7 +61,6 @@ export default function HomePage() {
         </section>
       </main>
 
-      {/* Footer */}
       <footer className="py-8 border-t">
         <div className="container mx-auto text-center text-muted-foreground text-sm">
           © {new Date().getFullYear()} Insight Flow. Built by Salim Shadman.

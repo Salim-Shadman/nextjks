@@ -1,3 +1,4 @@
+// src/components/editor/EditorSidebar.tsx
 'use client';
 
 import { Button } from '@/components/ui/button';
@@ -14,7 +15,7 @@ interface EditorSidebarProps {
 
 export function EditorSidebar({ projectId, datasetUrl }: EditorSidebarProps) {
   const utils = trpc.useContext();
-  
+
   const addBlockMutation = trpc.addStoryBlock.useMutation({
     onMutate: async (newBlock) => {
       await utils.getProjectById.cancel({ id: projectId });
@@ -68,7 +69,7 @@ export function EditorSidebar({ projectId, datasetUrl }: EditorSidebarProps) {
 
   return (
     <TooltipProvider>
-      <aside className="w-80 h-screen bg-card border-r flex flex-col p-4 space-y-6">
+      <aside className="w-72 bg-card border-r flex flex-col p-4 space-y-6">
         <div>
           <h2 className="text-lg font-semibold px-2 mb-2">Dataset</h2>
           {datasetUrl ? (
@@ -91,11 +92,36 @@ export function EditorSidebar({ projectId, datasetUrl }: EditorSidebarProps) {
         <hr />
         <div className="space-y-1">
           <h2 className="text-lg font-semibold mb-2 px-2">Add Blocks</h2>
-          <Button onClick={() => handleAddBlock('heading')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><Plus className="mr-2 h-4 w-4" /> Add Heading</Button>
-          <Button onClick={() => handleAddBlock('paragraph')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><Type className="mr-2 h-4 w-4" /> Add Paragraph</Button>
-          <Button onClick={() => handleAddBlock('chart')} disabled={addBlockMutation.isLoading || !datasetUrl} className="w-full justify-start" variant="ghost"><BarChart2 className="mr-2 h-4 w-4" /> Add Chart</Button>
-          <Button onClick={() => handleAddBlock('image')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><ImageIcon className="mr-2 h-4 w-4" /> Add Image</Button>
-          <Button onClick={() => handleAddBlock('video')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><Film className="mr-2 h-4 w-4" /> Add Video</Button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={() => handleAddBlock('heading')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><Plus className="mr-2 h-4 w-4" /> Add Heading</Button>
+            </TooltipTrigger>
+            <TooltipContent side="right"><p>Add a new heading block</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={() => handleAddBlock('paragraph')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><Type className="mr-2 h-4 w-4" /> Add Paragraph</Button>
+            </TooltipTrigger>
+            <TooltipContent side="right"><p>Add a new paragraph block</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={() => handleAddBlock('chart')} disabled={addBlockMutation.isLoading || !datasetUrl} className="w-full justify-start" variant="ghost"><BarChart2 className="mr-2 h-4 w-4" /> Add Chart</Button>
+            </TooltipTrigger>
+            <TooltipContent side="right"><p>Add a new chart block</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+               <Button onClick={() => handleAddBlock('image')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><ImageIcon className="mr-2 h-4 w-4" /> Add Image</Button>
+            </TooltipTrigger>
+            <TooltipContent side="right"><p>Add a new image block</p></TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={() => handleAddBlock('video')} disabled={addBlockMutation.isLoading} className="w-full justify-start" variant="ghost"><Film className="mr-2 h-4 w-4" /> Add Video</Button>
+            </TooltipTrigger>
+            <TooltipContent side="right"><p>Add a new video block</p></TooltipContent>
+          </Tooltip>
         </div>
       </aside>
     </TooltipProvider>

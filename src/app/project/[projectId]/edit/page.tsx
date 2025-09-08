@@ -23,7 +23,7 @@ export default function ProjectEditPage() {
       <div className="h-screen w-full flex flex-col">
         <Skeleton className="h-16 w-full flex-shrink-0" />
         <div className="flex flex-1 overflow-hidden">
-          <Skeleton className="h-full w-80" />
+          <Skeleton className="h-full w-72" />
           <div className="flex-1 p-16">
             <Skeleton className="h-full w-full max-w-3xl mx-auto" />
           </div>

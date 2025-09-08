@@ -27,15 +27,15 @@ export function EditorCanvas({ projectId, blocks }: EditorCanvasProps) {
     },
   }));
   const utils = trpc.useContext();
-  
+
   const updateOrderMutation = trpc.updateBlockOrder.useMutation({
     onMutate: async (newOrder) => {
       // Optimistically update the UI
       await utils.getProjectById.cancel({ id: projectId });
       const previousProjectData = utils.getProjectById.getData({ id: projectId });
-      
+
       if (previousProjectData) {
-        const optimisticBlocks = newOrder.orderedIds.map(id => 
+        const optimisticBlocks = newOrder.orderedIds.map(id =>
           previousProjectData.storyBlocks.find(b => b.id === id)
         ).filter(Boolean) as StoryBlockArrayType;
 
@@ -70,7 +70,7 @@ export function EditorCanvas({ projectId, blocks }: EditorCanvasProps) {
       const oldIndex = blocks.findIndex((b) => b.id === active.id);
       const newIndex = blocks.findIndex((b) => b.id === over.id);
       const orderedIds = arrayMove(blocks, oldIndex, newIndex).map(b => b.id);
-      
+
       updateOrderMutation.mutate({ projectId, orderedIds });
     }
   };
@@ -85,7 +85,7 @@ export function EditorCanvas({ projectId, blocks }: EditorCanvasProps) {
         modifiers={[restrictToVerticalAxis, restrictToWindowEdges]}
       >
         <SortableContext items={blocks.map((b) => b.id)} strategy={verticalListSortingStrategy}>
-          <div className="space-y-4">
+          <div className="space-y-6">
             <AnimatePresence>
               {blocks.map((block) => (
                 <motion.div
@@ -96,10 +96,10 @@ export function EditorCanvas({ projectId, blocks }: EditorCanvasProps) {
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3, ease: 'easeInOut' }}
                 >
-                  <SortableBlockItem 
-                    block={block} 
-                    projectId={projectId} 
-                    isDragging={activeId === block.id} 
+                  <SortableBlockItem
+                    block={block}
+                    projectId={projectId}
+                    isDragging={activeId === block.id}
                   />
                 </motion.div>
               ))}

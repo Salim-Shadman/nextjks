@@ -3,7 +3,7 @@
 import { generateHTML } from '@tiptap/html';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { ChartView } from './ChartView';
 import { trpc } from '@/lib/trpc';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,7 +12,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import type { ReactPlayerProps } from 'react-player';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
-import { Film } from 'lucide-react';
+import { Film, Loader2 } from 'lucide-react';
 
 const ReactPlayer = dynamic<ReactPlayerProps>(() => import('react-player'), { ssr: false });
 
@@ -20,6 +20,11 @@ type Block = StoryBlockType;
 
 export function BlockRenderer(props: { block: Block }) {
   const { block } = props;
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   if (block.type === 'heading') {
     const content = block.content as { text: string };
@@ -32,7 +37,9 @@ export function BlockRenderer(props: { block: Block }) {
       () => generateHTML(block.content as Record<string, any>, [StarterKit, Link]),
       [block.content]
     );
-    return <div className="prose dark:prose-invert" dangerouslySetInnerHTML={{ __html: html }} />;
+    // --- START: শুধুমাত্র এই লাইনে className পরিবর্তন করা হয়েছে ---
+    return <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: html }} />;
+    // --- END: পরিবর্তন এখানেই শেষ ---
   }
 
   if (block.type === 'chart') {
@@ -68,8 +75,22 @@ export function BlockRenderer(props: { block: Block }) {
     if (url) {
       return (
         <div className="overflow-hidden rounded-lg border bg-muted">
-          <AspectRatio ratio={16 / 9}>
-            <ReactPlayer url={url} width="100%" height="100%" controls />
+          <AspectRatio ratio={16 / 9} className="flex items-center justify-center">
+            {isClient ? (
+              <ReactPlayer 
+                url={url} 
+                width="100%" 
+                height="100%" 
+                controls
+                config={{
+                  youtube: {
+                    playerVars: { origin: window.location.origin },
+                  },
+                }}
+              />
+            ) : (
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            )}
           </AspectRatio>
         </div>
       );

@@ -20,15 +20,20 @@ export function VideoBlock({ block, onContentUpdate }: VideoBlockProps) {
   const [inputValue, setInputValue] = useState(content?.url ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    // This effect runs only on the client, setting the state to true
+    setIsClient(true);
+  }, []);
 
   useEffect(() => {
     if (content?.url !== inputValue) {
       setInputValue(content?.url ?? '');
     }
-  }, [content?.url]);
+  }, [content?.url, inputValue]);
 
   const handleUrlChange = async () => {
-    // ... function logic remains the same
     if (!inputValue) {
       setError('Please enter a video URL.');
       return;
@@ -55,8 +60,22 @@ export function VideoBlock({ block, onContentUpdate }: VideoBlockProps) {
   if (videoUrl) {
     return (
       <div>
-        <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden">
-          <ReactPlayer url={videoUrl} width="100%" height="100%" controls />
+        <AspectRatio ratio={16 / 9} className="bg-muted rounded-md overflow-hidden flex items-center justify-center">
+          {isClient ? (
+            <ReactPlayer
+              url={videoUrl}
+              width="100%"
+              height="100%"
+              controls
+              config={{
+                youtube: {
+                  playerVars: { origin: window.location.origin },
+                },
+              }}
+            />
+          ) : (
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          )}
         </AspectRatio>
         <div className="mt-2 text-center">
           <Button variant="link" size="sm" onClick={() => onContentUpdate({ url: null })}>

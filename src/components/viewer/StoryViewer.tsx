@@ -51,8 +51,9 @@ export function StoryViewer({ blocks, projectId }: StoryViewerProps) {
     return () => ctx.revert();
   }, [blocks]);
 
+  // --- START: শুধুমাত্র এই লাইনে className পরিবর্তন করা হয়েছে ---
   return (
-    <div ref={component}>
+    <div ref={component} className="max-w-5xl mx-auto">
       {blocks.map((block) => (
         <div key={block.id} className="story-block">
           <div className="my-8">
@@ -62,4 +63,5 @@ export function StoryViewer({ blocks, projectId }: StoryViewerProps) {
       ))}
     </div>
   );
+  // --- END: পরিবর্তন এখানেই শেষ ---
 }

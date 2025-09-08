@@ -89,9 +89,9 @@ export default function DashboardPage() {
         <Header />
         <main className="container mx-auto py-8">
           <PageWrapper>
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
               <h2 className="text-3xl font-bold tracking-tight">Your Projects</h2>
-              <Button onClick={handleCreateProject} disabled={createProjectMutation.isPending}>
+              <Button onClick={handleCreateProject} disabled={createProjectMutation.isPending} className="w-full md:w-auto">
                 <Plus className="mr-2 h-4 w-4" /> Create New Project
               </Button>
             </div>

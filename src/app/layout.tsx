@@ -1,12 +1,12 @@
-import type { Metadata } from 'next';
-import './globals.css';
-import { AuthProvider } from '@/components/AuthProvider';
-import { TrpcProvider } from '@/components/TrpcProvider';
-import { Toaster } from 'sonner';
+import type { Metadata } from "next";
+import "./globals.css";
+import { AuthProvider } from "@/components/AuthProvider";
+import { TrpcProvider } from "@/components/TrpcProvider";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: 'Insight Flow',
-  description: 'An Interactive Data Storytelling & Visualization SaaS',
+  title: "Insight Flow",
+  description: "An Interactive Data Storytelling & Visualization SaaS",
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="dark" style={{ colorScheme: 'dark' }}>
+      <body className="dark" style={{ colorScheme: "dark" }}>
         <AuthProvider>
           <TrpcProvider>
             {children}

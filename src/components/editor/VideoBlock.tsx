@@ -1,3 +1,4 @@
+// src/components/editor/VideoBlock.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -7,29 +8,27 @@ import { Button } from '@/components/ui/button';
 import { Film, Loader2, XCircle } from 'lucide-react';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { toast } from 'sonner';
+import { StoryBlockType } from '@/lib/types';
 
 interface VideoBlockProps {
-  block: {
-    id: string;
-    content?: {
-      url?: string | null;
-    };
-  };
+  block: StoryBlockType;
   onContentUpdate: (newContent: any) => void;
 }
 
 export function VideoBlock({ block, onContentUpdate }: VideoBlockProps) {
-  const [inputValue, setInputValue] = useState(block.content?.url ?? '');
+  const content = block.content as { url?: string | null };
+  const [inputValue, setInputValue] = useState(content?.url ?? '');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (block.content?.url !== inputValue) {
-      setInputValue(block.content?.url ?? '');
+    if (content?.url !== inputValue) {
+      setInputValue(content?.url ?? '');
     }
-  }, [block.content?.url]);
+  }, [content?.url]);
 
   const handleUrlChange = async () => {
+    // ... function logic remains the same
     if (!inputValue) {
       setError('Please enter a video URL.');
       return;
@@ -51,7 +50,7 @@ export function VideoBlock({ block, onContentUpdate }: VideoBlockProps) {
     setLoading(false);
   };
 
-  const videoUrl = block.content?.url ?? null;
+  const videoUrl = content?.url ?? null;
 
   if (videoUrl) {
     return (

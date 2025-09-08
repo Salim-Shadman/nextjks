@@ -7,8 +7,6 @@ import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { GripVertical, Trash2 } from 'lucide-react';
-import { AppRouter } from '@/server';
-import { inferRouterOutputs } from '@trpc/server';
 import { RichTextEditor } from './RichTextEditor';
 import { ChartBlock } from './ChartBlock';
 import { ImageBlock } from './ImageBlock';
@@ -17,16 +15,17 @@ import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-
-type StoryBlockType = inferRouterOutputs<AppRouter>['getProjectById']['storyBlocks'][number];
+import { StoryBlockType } from '@/lib/types';
 
 interface SortableBlockItemProps {
   block: StoryBlockType;
   projectId: string;
+  dataset: any[];
+  isDatasetError: boolean;
   isDragging: boolean;
 }
 
-export function SortableBlockItem({ block, projectId, isDragging }: SortableBlockItemProps) {
+export function SortableBlockItem({ block, projectId, dataset, isDatasetError, isDragging }: SortableBlockItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: block.id });
   const utils = trpc.useContext();
   const [isEditing, setIsEditing] = useState(false);
@@ -60,11 +59,11 @@ export function SortableBlockItem({ block, projectId, isDragging }: SortableBloc
     setIsEditing(false);
     handleContentUpdate({ text: headingText });
   };
-
+  
   const renderContent = () => {
-    if (block.type === 'heading') {
-      if (isEditing) {
-        return (
+    switch(block.type) {
+      case 'heading':
+        return isEditing ? (
           <Input
             autoFocus
             value={headingText}
@@ -76,45 +75,35 @@ export function SortableBlockItem({ block, projectId, isDragging }: SortableBloc
             }}
             className="text-2xl font-bold p-0 h-auto bg-transparent border-none focus-visible:ring-0"
           />
+        ) : (
+          <h2 className="text-2xl font-bold cursor-pointer p-1" onClick={() => setIsEditing(true)}>
+            {(block.content as { text: string }).text || "Click to edit heading"}
+          </h2>
         );
-      }
-      return (
-        <h2 className="text-2xl font-bold cursor-pointer p-1" onClick={() => setIsEditing(true)}>
-          {(block.content as { text: string }).text || "Click to edit heading"}
-        </h2>
-      );
-    }
-    if (block.type === 'paragraph') {
-      return <RichTextEditor content={block.content} onUpdate={handleContentUpdate} />;
-    }
-    if (block.type === 'chart') {
-      return <ChartBlock projectId={projectId} block={block} />;
-    }
-    if (block.type === 'image') {
-      return <ImageBlock block={block} onContentUpdate={handleContentUpdate} />;
-    }
-    if (block.type === 'video') {
+      case 'paragraph':
+        return <RichTextEditor content={block.content} onUpdate={handleContentUpdate} />;
+      case 'chart':
+        return <ChartBlock block={block} dataset={dataset} isDatasetError={isDatasetError} />;
+      case 'image':
+        return <ImageBlock block={block} onContentUpdate={handleContentUpdate} />;
+      case 'video':
         return <VideoBlock block={block} onContentUpdate={handleContentUpdate} />;
+      default:
+        return <p>Unknown block type</p>;
     }
-    return <p>Unknown block type</p>;
   };
 
   return (
     <div ref={setNodeRef} style={style} className="relative group">
       <motion.div
-        whileHover={{
-          scale: 1.02,
-          boxShadow: '0px 8px 25px rgba(0, 0, 0, 0.1)',
-        }}
+        whileHover={{ scale: 1.02, boxShadow: '0px 8px 25px rgba(0, 0, 0, 0.1)' }}
         animate={{ scale: isDragging ? 1.05 : 1 }}
         transition={{ type: 'spring', stiffness: 500, damping: 30 }}
       >
         <Card className={cn("overflow-hidden transition-colors", isDragging ? "bg-muted" : "bg-card")}>
           <CardContent className="p-4">
             <div className="flex flex-row items-start gap-4">
-              <div
-                className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-              >
+              <div className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                 <button {...attributes} {...listeners} className="cursor-grab p-2 text-muted-foreground hover:text-foreground">
                   <GripVertical className="h-5 w-5" />
                 </button>

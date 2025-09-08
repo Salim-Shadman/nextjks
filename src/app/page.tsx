@@ -1,6 +1,11 @@
 import { LandingHeader } from "@/components/layout/LandingHeader";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
 import { BarChart2, FileUp, Zap } from "lucide-react";
 import Link from "next/link";
 
@@ -8,7 +13,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <LandingHeader />
-      
+
       <main className="flex-1">
         <section className="container mx-auto text-center py-20 md:py-32 relative">
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-primary/10 to-transparent -z-10" />
@@ -16,7 +21,9 @@ export default function HomePage() {
             Turn Data into a Story
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Insight Flow is an online tool that lets you transform boring datasets into beautiful, animated, and interactive stories that captivate your audience.
+            Insight Flow is an online tool that lets you transform boring
+            datasets into beautiful, animated, and interactive stories that
+            captivate your audience.
           </p>
           <Button size="lg" asChild>
             <Link href="/dashboard">Get Started for Free</Link>
@@ -34,7 +41,8 @@ export default function HomePage() {
                   <BarChart2 className="h-8 w-8 mb-4 text-primary" />
                   <CardTitle>Interactive Charts</CardTitle>
                   <CardDescription>
-                    Easily create beautiful bar charts from your own data. Select your columns and watch your data come to life.
+                    Easily create beautiful bar charts from your own data.
+                    Select your columns and watch your data come to life.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -43,7 +51,9 @@ export default function HomePage() {
                   <FileUp className="h-8 w-8 mb-4 text-primary" />
                   <CardTitle>Simple Data Upload</CardTitle>
                   <CardDescription>
-                    Upload your CSV or text files in seconds. Our powerful parser handles the rest, making your data ready for visualization.
+                    Upload your CSV or text files in seconds. Our powerful
+                    parser handles the rest, making your data ready for
+                    visualization.
                   </CardDescription>
                 </CardHeader>
               </Card>
@@ -52,7 +62,8 @@ export default function HomePage() {
                   <Zap className="h-8 w-8 mb-4 text-primary" />
                   <CardTitle>Animated Storytelling</CardTitle>
                   <CardDescription>
-                    Engage your audience with smooth, scroll-based animations that reveal your story block by block.
+                    Engage your audience with smooth, scroll-based animations
+                    that reveal your story block by block.
                   </CardDescription>
                 </CardHeader>
               </Card>

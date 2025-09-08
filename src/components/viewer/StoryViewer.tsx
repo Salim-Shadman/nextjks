@@ -1,17 +1,16 @@
-// src/components/viewer/StoryViewer.tsx
 'use client';
 
 import { useEffect, useLayoutEffect, useRef } from 'react';
 import { BlockRenderer } from './BlockRenderer';
-import Lenis from '@studio-freight/lenis';
+import Lenis from 'lenis';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
-import { StoryBlockType } from '@/lib/types'; // <-- Import our new shared type
+import { StoryBlockType } from '@/lib/types';
 
 gsap.registerPlugin(ScrollTrigger);
 
 interface StoryViewerProps {
-  blocks: StoryBlockType[]; // <-- Use the new type for the array
+  blocks: StoryBlockType[];
   projectId: string;
 }
 

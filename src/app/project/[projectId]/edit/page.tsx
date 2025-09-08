@@ -15,13 +15,17 @@ export default function ProjectEditPage() {
   const projectId = params.projectId as string;
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const { data: project, isLoading, isError } = trpc.getProjectById.useQuery(
+  const { data: project, isLoading: isProjectLoading, isError: isProjectError } = trpc.getProjectById.useQuery(
     { id: projectId },
-    { 
-      enabled: !!projectId,
-      retry: 1,
-    }
+    { enabled: !!projectId, retry: 1 }
   );
+
+  const { data: dataset, isLoading: isDatasetLoading, isError: isDatasetError } = trpc.getProjectDataset.useQuery(
+    { projectId },
+    { enabled: !!project?.datasetUrl, retry: 1 }
+  );
+
+  const isLoading = isProjectLoading || (project?.datasetUrl && isDatasetLoading);
 
   if (isLoading) {
     return (
@@ -41,7 +45,7 @@ export default function ProjectEditPage() {
     );
   }
 
-  if (isError || !project) {
+  if (isProjectError || !project) {
     return (
       <div className="flex h-screen items-center justify-center text-center p-4">
         <div>
@@ -70,7 +74,12 @@ export default function ProjectEditPage() {
             onClose={() => setIsSidebarOpen(false)}
           />
           <main className="flex-1 h-[calc(100vh-4rem)] overflow-y-auto p-4 md:p-8 lg:p-12 bg-muted/40">
-            <EditorCanvas projectId={project.id} blocks={project.storyBlocks} />
+            <EditorCanvas 
+              projectId={project.id} 
+              blocks={project.storyBlocks} 
+              dataset={dataset || []}
+              isDatasetError={isDatasetError}
+            />
           </main>
         </div>
       </div>

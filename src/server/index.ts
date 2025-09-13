@@ -4,11 +4,12 @@ import { publicProcedure, protectedProcedure, router } from './trpc';
 import prisma from '@/lib/prisma';
 import Papa from 'papaparse';
 import { TRPCError } from '@trpc/server';
+import { env } from '@/env'; // Corrected import path
 
 export const appRouter = router({
   // --- Project Procedures ---
   getProjects: protectedProcedure.query(async ({ ctx }) => {
-    return prisma.project.findMany({ 
+    return prisma.project.findMany({
       where: { userId: ctx.session.user.id },
       orderBy: { updatedAt: 'desc' }
     });
@@ -17,8 +18,8 @@ export const appRouter = router({
   createProject: protectedProcedure
     .input(z.object({ title: z.string().min(1, "Title is required.") }))
     .mutation(async ({ ctx, input }) => {
-      return prisma.project.create({ 
-        data: { title: input.title, userId: ctx.session.user.id } 
+      return prisma.project.create({
+        data: { title: input.title, userId: ctx.session.user.id }
       });
     }),
 
@@ -34,7 +35,7 @@ export const appRouter = router({
       }
       return project;
     }),
-  
+
   updateProjectTitle: protectedProcedure
     .input(z.object({ projectId: z.string(), title: z.string().min(1) }))
     .mutation(async ({ ctx, input }) => {
@@ -59,7 +60,7 @@ export const appRouter = router({
     .mutation(async ({ ctx, input }) => {
       // The schema is set to cascade delete, so blocks will be deleted too.
       await prisma.project.delete({
-        where: { 
+        where: {
           id: input.projectId,
           userId: ctx.session.user.id,
         },
@@ -94,7 +95,7 @@ export const appRouter = router({
       });
 
       const newOrder = lastBlock ? lastBlock.order + 1 : 0;
-      
+
       return prisma.storyBlock.create({
         data: { ...input, order: newOrder },
       });
@@ -127,10 +128,10 @@ export const appRouter = router({
       if(blockToUpdate?.project.userId !== ctx.session.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
-      
-      await prisma.storyBlock.update({ 
-        where: { id: input.blockId }, 
-        data: { content: input.content } 
+
+      await prisma.storyBlock.update({
+        where: { id: input.blockId },
+        data: { content: input.content }
       });
 
       return { success: true };
@@ -143,7 +144,7 @@ export const appRouter = router({
         where: { id: input.blockId },
         select: { project: { select: { userId: true }}}
       });
-      
+
       if(blockToDelete?.project.userId !== ctx.session.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
@@ -158,9 +159,9 @@ export const appRouter = router({
   linkDatasetToProject: protectedProcedure
     .input(z.object({ projectId: z.string(), fileUrl: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      await prisma.project.updateMany({ 
-        where: { id: input.projectId, userId: ctx.session.user.id }, 
-        data: { datasetUrl: input.fileUrl } 
+      await prisma.project.updateMany({
+        where: { id: input.projectId, userId: ctx.session.user.id },
+        data: { datasetUrl: input.fileUrl }
       });
       return { success: true };
     }),
@@ -188,9 +189,6 @@ export const appRouter = router({
   searchUnsplashImages: protectedProcedure
     .input(z.object({ query: z.string() }))
     .query(async ({ input }) => {
-      if (!process.env.UNSPLASH_ACCESS_KEY) {
-        throw new Error('Unsplash API key is not configured.');
-      }
       if (!input.query) {
         return [];
       }
@@ -198,7 +196,7 @@ export const appRouter = router({
         `https://api.unsplash.com/search/photos?query=${encodeURIComponent(input.query)}&per_page=9`,
         {
           headers: {
-            Authorization: `Client-ID ${process.env.UNSPLASH_ACCESS_KEY}`,
+            Authorization: `Client-ID ${env.UNSPLASH_ACCESS_KEY}`,
           },
         }
       );

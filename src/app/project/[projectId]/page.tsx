@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { StoryViewer } from '@/components/viewer/StoryViewer';
 import { PageWrapper } from '@/components/layout/PageWrapper';
 import { LandingHeader } from '@/components/layout/LandingHeader';
-import prisma from '@/lib/prisma';
+import prisma from '@/lib/prisma'; // This import should now work correctly
 
 // This function pre-renders all public projects at build time
 export async function generateStaticParams() {

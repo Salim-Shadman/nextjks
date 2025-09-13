@@ -1,3 +1,4 @@
+// src/app/dashboard/page.tsx
 'use client';
 
 import { trpc } from '@/lib/trpc';
@@ -27,11 +28,13 @@ const itemVariants = {
 };
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const utils = trpc.useUtils();
   const [view, setView] = useState<'grid' | 'list'>('grid');
-  
-  const getProjectsQuery = trpc.getProjects.useQuery(undefined, { enabled: !!session });
+
+  const getProjectsQuery = trpc.getProjects.useQuery(undefined, {
+    enabled: status === 'authenticated',
+  });
 
   const createProjectMutation = trpc.createProject.useMutation({
     onSuccess: (newProject) => {
@@ -70,7 +73,15 @@ export default function DashboardPage() {
     }
   };
 
-  if (!session) {
+  if (status === 'loading') {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-background">
+        <p>Loading...</p>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated') {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-background">
         <PageWrapper>

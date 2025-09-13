@@ -1,7 +1,7 @@
 // src/components/editor/SortableBlockItem.tsx
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,7 +25,7 @@ interface SortableBlockItemProps {
   isDragging: boolean;
 }
 
-export function SortableBlockItem({ block, projectId, dataset, isDatasetError, isDragging }: SortableBlockItemProps) {
+export const SortableBlockItem = React.memo(function SortableBlockItem({ block, projectId, dataset, isDatasetError, isDragging }: SortableBlockItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: block.id });
   const utils = trpc.useContext();
   const [isEditing, setIsEditing] = useState(false);
@@ -59,7 +59,7 @@ export function SortableBlockItem({ block, projectId, dataset, isDatasetError, i
     setIsEditing(false);
     handleContentUpdate({ text: headingText });
   };
-  
+
   const renderContent = () => {
     switch(block.type) {
       case 'heading':
@@ -122,4 +122,4 @@ export function SortableBlockItem({ block, projectId, dataset, isDatasetError, i
       </motion.div>
     </div>
   );
-}
+});

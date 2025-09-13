@@ -1,10 +1,10 @@
+// src/components/viewer/BlockRenderer.tsx
 'use client';
 
 import { generateHTML } from '@tiptap/html';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
-import { useMemo, useState, useEffect } from 'react';
-import { ChartView } from './ChartView';
+import { useMemo, useState, useEffect, Suspense } from 'react';
 import { trpc } from '@/lib/trpc';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StoryBlockType } from '@/lib/types';
@@ -15,6 +15,10 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Film, Loader2 } from 'lucide-react';
 
 const ReactPlayer = dynamic<ReactPlayerProps>(() => import('react-player'), { ssr: false });
+const ChartView = dynamic(() => import('./ChartView').then(mod => mod.ChartView), {
+  ssr: false,
+  loading: () => <Skeleton className="h-96 w-full" />,
+});
 
 type Block = StoryBlockType;
 
@@ -37,16 +41,18 @@ export function BlockRenderer(props: { block: Block }) {
       () => generateHTML(block.content as Record<string, any>, [StarterKit, Link]),
       [block.content]
     );
-    // --- START: শুধুমাত্র এই লাইনে className পরিবর্তন করা হয়েছে ---
     return <div className="prose dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: html }} />;
-    // --- END: পরিবর্তন এখানেই শেষ ---
   }
 
   if (block.type === 'chart') {
     const { data, isLoading } = trpc.getProjectDataset.useQuery({ projectId: block.projectId as string });
     if (isLoading) return <Skeleton className="h-96 w-full" />;
     if (!data) return null;
-    return <ChartView data={data} content={block.content} />;
+    return (
+      <Suspense fallback={<Skeleton className="h-96 w-full" />}>
+        <ChartView data={data} content={block.content} />
+      </Suspense>
+    );
   }
 
   if (block.type === 'image') {
@@ -77,10 +83,10 @@ export function BlockRenderer(props: { block: Block }) {
         <div className="overflow-hidden rounded-lg border bg-muted">
           <AspectRatio ratio={16 / 9} className="flex items-center justify-center">
             {isClient ? (
-              <ReactPlayer 
-                url={url} 
-                width="100%" 
-                height="100%" 
+              <ReactPlayer
+                url={url}
+                width="100%"
+                height="100%"
                 controls
                 config={{
                   youtube: {

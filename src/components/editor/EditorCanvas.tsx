@@ -9,7 +9,7 @@ import { trpc } from '@/lib/trpc';
 import { AppRouter } from '@/server';
 import { inferRouterOutputs } from '@trpc/server';
 import { AnimatePresence, motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { toast } from 'sonner';
 
 type StoryBlockArrayType = inferRouterOutputs<AppRouter>['getProjectById']['storyBlocks'];
@@ -20,6 +20,8 @@ interface EditorCanvasProps {
   dataset: any[];
   isDatasetError: boolean;
 }
+
+const MemoizedSortableBlockItem = memo(SortableBlockItem);
 
 export function EditorCanvas({ projectId, blocks, dataset, isDatasetError }: EditorCanvasProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -58,11 +60,11 @@ export function EditorCanvas({ projectId, blocks, dataset, isDatasetError }: Edi
     },
   });
 
-  const handleDragStart = (event: DragStartEvent) => {
+  const handleDragStart = useCallback((event: DragStartEvent) => {
     setActiveId(event.active.id as string);
-  };
+  }, []);
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
     setActiveId(null);
     const { active, over } = event;
     if (over && active.id !== over.id) {
@@ -72,7 +74,7 @@ export function EditorCanvas({ projectId, blocks, dataset, isDatasetError }: Edi
 
       updateOrderMutation.mutate({ projectId, orderedIds });
     }
-  };
+  }, [blocks, projectId, updateOrderMutation]);
 
   return (
     <div className="max-w-3xl mx-auto min-h-full">
@@ -95,7 +97,7 @@ export function EditorCanvas({ projectId, blocks, dataset, isDatasetError }: Edi
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.3, ease: 'easeInOut' }}
                 >
-                  <SortableBlockItem
+                  <MemoizedSortableBlockItem
                     block={block}
                     projectId={projectId}
                     dataset={dataset}

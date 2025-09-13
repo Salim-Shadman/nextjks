@@ -1,6 +1,7 @@
+// src/components/viewer/StoryViewer.tsx
 'use client';
 
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef, memo } from 'react';
 import { BlockRenderer } from './BlockRenderer';
 import Lenis from 'lenis';
 import gsap from 'gsap';
@@ -14,24 +15,39 @@ interface StoryViewerProps {
   projectId: string;
 }
 
+const MemoizedBlockRenderer = memo(BlockRenderer);
+
 export function StoryViewer({ blocks, projectId }: StoryViewerProps) {
-  const component = useRef(null);
+  const component = useRef<HTMLDivElement>(null);
+  const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
+    // Initialize Lenis for smooth scrolling
     const lenis = new Lenis();
-    function raf(time: number) {
+    lenisRef.current = lenis;
+
+    const raf = (time: number) => {
       lenis.raf(time);
       requestAnimationFrame(raf);
-    }
-    requestAnimationFrame(raf);
-    return () => lenis.destroy();
+    };
+
+    const reqId = requestAnimationFrame(raf);
+
+    // Cleanup function to destroy Lenis instance
+    return () => {
+      cancelAnimationFrame(reqId);
+      lenis.destroy();
+    };
   }, []);
 
   useLayoutEffect(() => {
-    let ctx = gsap.context(() => {
-      const storyBlocks = gsap.utils.toArray('.story-block');
-      storyBlocks.forEach((block: any) => {
-        gsap.fromTo(block, 
+    if (!component.current) return;
+    // Animate story blocks on scroll using GSAP
+    const ctx = gsap.context(() => {
+      const storyBlocks = gsap.utils.toArray<HTMLDivElement>('.story-block');
+      storyBlocks.forEach((block) => {
+        gsap.fromTo(
+          block,
           { opacity: 0, y: 50 },
           {
             opacity: 1,
@@ -48,20 +64,18 @@ export function StoryViewer({ blocks, projectId }: StoryViewerProps) {
         );
       });
     }, component);
+
+    // Cleanup GSAP context on unmount
     return () => ctx.revert();
   }, [blocks]);
 
-  // --- START: শুধুমাত্র এই লাইনে className পরিবর্তন করা হয়েছে ---
   return (
     <div ref={component} className="max-w-5xl mx-auto">
       {blocks.map((block) => (
-        <div key={block.id} className="story-block">
-          <div className="my-8">
-            <BlockRenderer block={block} />
-          </div>
+        <div key={block.id} className="story-block my-8">
+          <MemoizedBlockRenderer block={block} />
         </div>
       ))}
     </div>
   );
-  // --- END: পরিবর্তন এখানেই শেষ ---
 }

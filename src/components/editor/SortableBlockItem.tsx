@@ -1,7 +1,7 @@
 // src/components/editor/SortableBlockItem.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,7 +25,6 @@ interface SortableBlockItemProps {
   isDragging: boolean;
 }
 
-// Wrap component in React.memo
 export const SortableBlockItem = React.memo(function SortableBlockItem({ block, projectId, dataset, isDatasetError, isDragging }: SortableBlockItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: block.id });
   const utils = trpc.useContext();
@@ -46,23 +45,23 @@ export const SortableBlockItem = React.memo(function SortableBlockItem({ block, 
     }
   });
 
-  const handleContentUpdate = (newContent: any) => {
+  const handleContentUpdate = useCallback((newContent: any) => {
     updateContentMutation.mutate({ blockId: block.id, content: newContent });
-  };
+  }, [block.id, updateContentMutation]);
 
-  const handleDeleteBlock = () => {
+  const handleDeleteBlock = useCallback(() => {
     if (window.confirm('Are you sure you want to delete this block?')) {
       deleteBlockMutation.mutate({ blockId: block.id });
     }
-  };
+  }, [block.id, deleteBlockMutation]);
 
-  const saveHeading = () => {
+  const saveHeading = useCallback(() => {
     setIsEditing(false);
     handleContentUpdate({ text: headingText });
-  };
+  }, [handleContentUpdate, headingText]);
 
   const renderContent = () => {
-    switch(block.type) {
+    switch (block.type) {
       case 'heading':
         return isEditing ? (
           <Input

@@ -1,7 +1,7 @@
 // src/components/editor/FileUpload.tsx
 'use client';
 
-import { UploadButton } from "@uploadthing/react";
+import { UploadDropzone } from "@uploadthing/react";
 import type { OurFileRouter } from "@/server/uploadthing";
 import { toast } from "sonner";
 import { trpc } from "@/lib/trpc";
@@ -10,17 +10,15 @@ import { Upload } from "lucide-react"; // Import Upload icon
 
 interface FileUploadProps {
   projectId: string;
-  currentDatasetUrl: string | null; // Pass the current dataset URL
+  currentDatasetUrl: string | null;
 }
 
 export function FileUpload({ projectId, currentDatasetUrl }: FileUploadProps) {
   const utils = trpc.useUtils();
   const linkDatasetMutation = trpc.linkDatasetToProject.useMutation();
 
-  // Custom UploadButton that looks like a regular Shadcn Button
-  const CustomUploadButton = (props: Parameters<typeof UploadButton>[0]) => (
-    <UploadButton<OurFileRouter, "datasetUploader">
-      {...props}
+  return (
+    <UploadDropzone<OurFileRouter, "datasetUploader">
       endpoint="datasetUploader"
       onClientUploadComplete={(res) => {
         if (res?.[0]?.url) {
@@ -40,14 +38,11 @@ export function FileUpload({ projectId, currentDatasetUrl }: FileUploadProps) {
           description: error.message,
         });
       }}
-    >
-      {/* This is the content inside the UploadButton. It uses a Shadcn Button */}
-      <Button className="w-full" variant={currentDatasetUrl ? "outline" : "default"}>
-        <Upload className="h-4 w-4 mr-2" />
-        {currentDatasetUrl ? "Change Dataset" : "Choose File"}
-      </Button>
-    </UploadButton>
+      content={{
+        label: "Drag and drop your dataset here",
+        button: currentDatasetUrl ? "Change Dataset" : "Choose File",
+      }}
+      className="p-4 ut-label:text-sm ut-allowed-content:text-xs ut-button:bg-primary ut-button:text-primary-foreground ut-button:hover:bg-primary/90 ut-button:active:bg-primary/80"
+    />
   );
-
-  return <CustomUploadButton />;
 }

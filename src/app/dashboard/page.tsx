@@ -8,11 +8,13 @@ import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from '@/comp
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Plus, MoreVertical, Edit, Trash2, Eye, LayoutGrid, LogIn } from 'lucide-react';
+import { Plus, MoreVertical, Edit, Trash2, Eye, LayoutGrid, LogIn, List } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { PageWrapper } from '@/components/layout/PageWrapper';
 import { toast } from 'sonner';
+import { useState } from 'react';
+import { Toggle } from '@/components/ui/toggle';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -27,6 +29,7 @@ const itemVariants = {
 export default function DashboardPage() {
   const { data: session } = useSession();
   const utils = trpc.useUtils();
+  const [view, setView] = useState<'grid' | 'list'>('grid');
   
   const getProjectsQuery = trpc.getProjects.useQuery(undefined, { enabled: !!session });
 
@@ -91,13 +94,22 @@ export default function DashboardPage() {
           <PageWrapper>
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8 gap-4">
               <h2 className="text-3xl font-bold tracking-tight">Your Projects</h2>
-              <Button onClick={handleCreateProject} disabled={createProjectMutation.isPending} className="w-full md:w-auto">
-                <Plus className="mr-2 h-4 w-4" /> Create New Project
-              </Button>
+              <div className="flex items-center gap-2">
+                <Toggle
+                  size="sm"
+                  pressed={view === 'list'}
+                  onPressedChange={() => setView(view === 'grid' ? 'list' : 'grid')}
+                >
+                  {view === 'grid' ? <List className="h-4 w-4" /> : <LayoutGrid className="h-4 w-4" />}
+                </Toggle>
+                <Button onClick={handleCreateProject} disabled={createProjectMutation.isPending} className="w-full md:w-auto">
+                  <Plus className="mr-2 h-4 w-4" /> Create New Project
+                </Button>
+              </div>
             </div>
 
             {getProjectsQuery.isLoading && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className={view === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}>
                 {[...Array(3)].map((_, i) => (
                   <Card key={i}>
                     <CardHeader>
@@ -122,39 +134,59 @@ export default function DashboardPage() {
 
             {Array.isArray(getProjectsQuery.data) && getProjectsQuery.data.length > 0 && (
               <motion.div
-                className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                className={view === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
               >
                 {getProjectsQuery.data.map((project) => (
                   <motion.div key={project.id} variants={itemVariants} whileHover={{ y: -5 }} transition={{ type: 'spring', stiffness: 300 }}>
-                    <Card className="flex flex-col h-full">
-                      <CardHeader className="flex-row items-start justify-between">
-                        <div>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <CardTitle className="truncate">{project.title}</CardTitle>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>{project.title}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                          <CardDescription>Updated: {new Date(project.updatedAt).toLocaleDateString()}</CardDescription>
+                    <Card className={view === 'list' ? 'flex items-center justify-between p-4' : "flex flex-col h-full"}>
+                      <div className={view === 'list' ? 'flex items-center gap-4' : ''}>
+                        <CardHeader className={view === 'list' ? 'p-0' : 'flex-row items-start justify-between'}>
+                          <div>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <CardTitle className="truncate">{project.title}</CardTitle>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>{project.title}</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <CardDescription>Updated: {new Date(project.updatedAt).toLocaleDateString()}</CardDescription>
+                          </div>
+                          {view === 'grid' && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem asChild><Link href={`/project/${project.id}/edit`}><Edit className="mr-2 h-4 w-4" /> Edit</Link></DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDeleteProject(project.id)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </CardHeader>
+                        {view === 'grid' && (
+                          <CardFooter className="mt-auto">
+                            <Button asChild className="w-full" variant="secondary">
+                              <Link href={`/project/${project.id}`} target="_blank"><Eye className="mr-2 h-4 w-4" /> View Public Page</Link>
+                            </Button>
+                          </CardFooter>
+                        )}
+                      </div>
+                      {view === 'list' && (
+                        <div className="flex items-center gap-2">
+                          <Button asChild variant="secondary">
+                            <Link href={`/project/${project.id}`} target="_blank"><Eye className="mr-2 h-4 w-4" /> View</Link>
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem asChild><Link href={`/project/${project.id}/edit`}><Edit className="mr-2 h-4 w-4" /> Edit</Link></DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDeleteProject(project.id)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild><Link href={`/project/${project.id}/edit`}><Edit className="mr-2 h-4 w-4" /> Edit</Link></DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDeleteProject(project.id)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </CardHeader>
-                      <CardFooter className="mt-auto">
-                        <Button asChild className="w-full" variant="secondary">
-                          <Link href={`/project/${project.id}`} target="_blank"><Eye className="mr-2 h-4 w-4" /> View Public Page</Link>
-                        </Button>
-                      </CardFooter>
+                      )}
                     </Card>
                   </motion.div>
                 ))}

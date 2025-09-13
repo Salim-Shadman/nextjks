@@ -25,6 +25,7 @@ interface SortableBlockItemProps {
   isDragging: boolean;
 }
 
+// Wrap component in React.memo
 export const SortableBlockItem = React.memo(function SortableBlockItem({ block, projectId, dataset, isDatasetError, isDragging }: SortableBlockItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: block.id });
   const utils = trpc.useContext();

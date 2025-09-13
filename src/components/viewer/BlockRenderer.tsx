@@ -15,6 +15,8 @@ import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Film, Loader2 } from 'lucide-react';
 
 const ReactPlayer = dynamic<ReactPlayerProps>(() => import('react-player'), { ssr: false });
+
+// Dynamically import ChartView
 const ChartView = dynamic(() => import('./ChartView').then(mod => mod.ChartView), {
   ssr: false,
   loading: () => <Skeleton className="h-96 w-full" />,

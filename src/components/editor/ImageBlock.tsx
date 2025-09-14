@@ -49,6 +49,7 @@ export function ImageBlock({ block, onContentUpdate }: ImageBlockProps) {
           width={1600}
           height={900}
           className="rounded-md object-cover"
+          priority // Add priority prop here
         />
         <div className="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <Button size="sm" onClick={() => onContentUpdate(null)}>

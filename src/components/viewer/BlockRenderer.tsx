@@ -4,7 +4,7 @@
 import { generateHTML } from '@tiptap/html';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
-import { useMemo, useState, useEffect, Suspense } from 'react';
+import { useMemo, Suspense } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StoryBlockType } from '@/lib/types';
 import Image from 'next/image';
@@ -13,7 +13,14 @@ import type { ReactPlayerProps } from 'react-player';
 import { AspectRatio } from '@/components/ui/aspect-ratio';
 import { Film, Loader2 } from 'lucide-react';
 
-const ReactPlayer = dynamic<ReactPlayerProps>(() => import('react-player'), { ssr: false });
+const ReactPlayer = dynamic<ReactPlayerProps>(() => import('react-player'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-muted">
+      <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+    </div>
+  ),
+});
 
 const ChartView = dynamic(() => import('./ChartView').then(mod => mod.ChartView), {
   ssr: false,
@@ -22,16 +29,10 @@ const ChartView = dynamic(() => import('./ChartView').then(mod => mod.ChartView)
 
 interface BlockRendererProps {
   block: StoryBlockType;
-  dataset: any[]; // Accept dataset as a prop
+  dataset: any[];
 }
 
 export function BlockRenderer({ block, dataset }: BlockRendererProps) {
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   if (block.type === 'heading') {
     const content = block.content as { text: string };
     return <h2 className="text-3xl font-bold">{content.text}</h2>;
@@ -47,7 +48,6 @@ export function BlockRenderer({ block, dataset }: BlockRendererProps) {
   }
 
   if (block.type === 'chart') {
-    // No longer fetches data! It uses the prop.
     if (!dataset) return null;
     return (
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
@@ -67,6 +67,7 @@ export function BlockRenderer({ block, dataset }: BlockRendererProps) {
             width={1600}
             height={900}
             className="rounded-md object-cover"
+            priority // Add priority prop here
           />
           {content.alt && <figcaption className="text-center text-sm text-muted-foreground mt-2">{content.alt}</figcaption>}
         </figure>
@@ -76,27 +77,18 @@ export function BlockRenderer({ block, dataset }: BlockRendererProps) {
   }
 
   if (block.type === 'video') {
-    const content = block.content as { url: string };
-    const url = content.url;
-    if (url) {
+    const content = block.content as { videoId?: string };
+    const videoId = content.videoId;
+    if (videoId) {
       return (
         <div className="overflow-hidden rounded-lg border bg-muted">
-          <AspectRatio ratio={16 / 9} className="flex items-center justify-center">
-            {isClient ? (
-              <ReactPlayer
-                url={url}
-                width="100%"
-                height="100%"
-                controls
-                config={{
-                  youtube: {
-                    playerVars: { origin: typeof window !== 'undefined' ? window.location.origin : '' },
-                  },
-                }}
-              />
-            ) : (
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            )}
+          <AspectRatio ratio={16 / 9}>
+            <ReactPlayer
+              url={`https://www.youtube.com/watch?v=${videoId}`}
+              width="100%"
+              height="100%"
+              controls
+            />
           </AspectRatio>
         </div>
       );

@@ -14,8 +14,10 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { PageWrapper } from '@/components/layout/PageWrapper';
 import { toast } from 'sonner';
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import { Toggle } from '@/components/ui/toggle';
+import { inferRouterOutputs } from '@trpc/server';
+import { AppRouter } from '@/server';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -26,6 +28,63 @@ const itemVariants = {
   hidden: { y: 20, opacity: 0 },
   visible: { y: 0, opacity: 1 },
 };
+
+type Project = inferRouterOutputs<AppRouter>['getProjects'][number];
+
+// Step 1: Create a memoized ProjectCard component
+const ProjectCard = memo(({ project, view, onDelete }: { project: Project, view: 'grid' | 'list', onDelete: (id: string) => void }) => {
+  return (
+    <motion.div variants={itemVariants} whileHover={{ y: -5 }} transition={{ type: 'spring', stiffness: 300 }}>
+      <Card className={view === 'list' ? 'flex items-center justify-between p-4' : "flex flex-col h-full"}>
+        <div className={view === 'list' ? 'flex items-center gap-4' : ''}>
+          <CardHeader className={view === 'list' ? 'p-0' : 'flex-row items-start justify-between'}>
+            <div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <CardTitle className="truncate">{project.title}</CardTitle>
+                </TooltipTrigger>
+                <TooltipContent><p>{project.title}</p></TooltipContent>
+              </Tooltip>
+              <CardDescription>Updated: {new Date(project.updatedAt).toLocaleDateString()}</CardDescription>
+            </div>
+            {view === 'grid' && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem asChild><Link href={`/project/${project.id}/edit`}><Edit className="mr-2 h-4 w-4" /> Edit</Link></DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => onDelete(project.id)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+          </CardHeader>
+          {view === 'grid' && (
+            <CardFooter className="mt-auto">
+              <Button asChild className="w-full" variant="secondary">
+                <Link href={`/project/${project.id}`} target="_blank"><Eye className="mr-2 h-4 w-4" /> View Public Page</Link>
+              </Button>
+            </CardFooter>
+          )}
+        </div>
+        {view === 'list' && (
+          <div className="flex items-center gap-2">
+            <Button asChild variant="secondary">
+              <Link href={`/project/${project.id}`} target="_blank"><Eye className="mr-2 h-4 w-4" /> View</Link>
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild><Link href={`/project/${project.id}/edit`}><Edit className="mr-2 h-4 w-4" /> Edit</Link></DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onDelete(project.id)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        )}
+      </Card>
+    </motion.div>
+  );
+});
+ProjectCard.displayName = 'ProjectCard';
+
 
 export default function DashboardPage() {
   const { data: session, status } = useSession();
@@ -59,19 +118,20 @@ export default function DashboardPage() {
       });
     }
   });
-
-  const handleCreateProject = () => {
+  
+  // Step 2: Memoize handler functions with useCallback
+  const handleCreateProject = useCallback(() => {
     const title = prompt('Enter project title:');
     if (title) {
       createProjectMutation.mutate({ title });
     }
-  };
+  }, [createProjectMutation]);
 
-  const handleDeleteProject = (projectId: string) => {
+  const handleDeleteProject = useCallback((projectId: string) => {
     if (window.confirm('Are you sure you want to delete this project?')) {
       deleteProjectMutation.mutate({ projectId });
     }
-  };
+  }, [deleteProjectMutation]);
 
   if (status === 'loading') {
     return (
@@ -135,7 +195,7 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {getProjectsQuery.data && getProjectsQuery.data.length === 0 && (
+            {getProjectsQuery.data?.length === 0 && (
               <div className="text-center py-16 border-2 border-dashed rounded-lg">
                 <LayoutGrid className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-xl font-medium">No projects yet!</h3>
@@ -143,63 +203,16 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {Array.isArray(getProjectsQuery.data) && getProjectsQuery.data.length > 0 && (
+            {getProjectsQuery.data && getProjectsQuery.data.length > 0 && (
               <motion.div
                 className={view === 'grid' ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" : "space-y-4"}
                 variants={containerVariants}
                 initial="hidden"
                 animate="visible"
               >
+                {/* Step 3: Use the new memoized component */}
                 {getProjectsQuery.data.map((project) => (
-                  <motion.div key={project.id} variants={itemVariants} whileHover={{ y: -5 }} transition={{ type: 'spring', stiffness: 300 }}>
-                    <Card className={view === 'list' ? 'flex items-center justify-between p-4' : "flex flex-col h-full"}>
-                      <div className={view === 'list' ? 'flex items-center gap-4' : ''}>
-                        <CardHeader className={view === 'list' ? 'p-0' : 'flex-row items-start justify-between'}>
-                          <div>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <CardTitle className="truncate">{project.title}</CardTitle>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{project.title}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                            <CardDescription>Updated: {new Date(project.updatedAt).toLocaleDateString()}</CardDescription>
-                          </div>
-                          {view === 'grid' && (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem asChild><Link href={`/project/${project.id}/edit`}><Edit className="mr-2 h-4 w-4" /> Edit</Link></DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleDeleteProject(project.id)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          )}
-                        </CardHeader>
-                        {view === 'grid' && (
-                          <CardFooter className="mt-auto">
-                            <Button asChild className="w-full" variant="secondary">
-                              <Link href={`/project/${project.id}`} target="_blank"><Eye className="mr-2 h-4 w-4" /> View Public Page</Link>
-                            </Button>
-                          </CardFooter>
-                        )}
-                      </div>
-                      {view === 'list' && (
-                        <div className="flex items-center gap-2">
-                          <Button asChild variant="secondary">
-                            <Link href={`/project/${project.id}`} target="_blank"><Eye className="mr-2 h-4 w-4" /> View</Link>
-                          </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild><Link href={`/project/${project.id}/edit`}><Edit className="mr-2 h-4 w-4" /> Edit</Link></DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDeleteProject(project.id)} className="text-destructive"><Trash2 className="mr-2 h-4 w-4" /> Delete</DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </div>
-                      )}
-                    </Card>
-                  </motion.div>
+                  <ProjectCard key={project.id} project={project} view={view} onDelete={handleDeleteProject} />
                 ))}
               </motion.div>
             )}

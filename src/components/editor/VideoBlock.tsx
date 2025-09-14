@@ -1,7 +1,7 @@
 // src/components/editor/VideoBlock.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import ReactPlayer from 'react-player';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -23,17 +23,17 @@ export function VideoBlock({ block, onContentUpdate }: VideoBlockProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    // This effect runs only on the client, setting the state to true
     setIsClient(true);
   }, []);
 
+  // --- START: শুধুমাত্র এই useEffect হুকটি পরিবর্তন করা হয়েছে ---
   useEffect(() => {
-    if (content?.url !== inputValue) {
-      setInputValue(content?.url ?? '');
-    }
-  }, [content?.url, inputValue]);
+    // This effect now correctly syncs the input value only when the block's content prop changes from the outside.
+    setInputValue(content?.url ?? '');
+  }, [content?.url]);
+  // --- END: পরিবর্তন এখানেই শেষ ---
 
-  const handleUrlChange = async () => {
+  const handleUrlChange = useCallback(async () => {
     if (!inputValue) {
       setError('Please enter a video URL.');
       return;
@@ -45,7 +45,7 @@ export function VideoBlock({ block, onContentUpdate }: VideoBlockProps) {
     const isSupported = ReactPlayer.canPlay(inputValue);
 
     if (isSupported) {
-      await onContentUpdate({ url: inputValue });
+      onContentUpdate({ url: inputValue });
       toast.success('Video embedded successfully!');
     } else {
       setError('Invalid or unsupported video URL. Please check the link and try again.');
@@ -53,7 +53,7 @@ export function VideoBlock({ block, onContentUpdate }: VideoBlockProps) {
     }
 
     setLoading(false);
-  };
+  }, [inputValue, onContentUpdate]);
 
   const videoUrl = content?.url ?? null;
 
@@ -69,7 +69,7 @@ export function VideoBlock({ block, onContentUpdate }: VideoBlockProps) {
               controls
               config={{
                 youtube: {
-                  playerVars: { origin: window.location.origin },
+                  playerVars: { origin: typeof window !== 'undefined' ? window.location.origin : '' },
                 },
               }}
             />

@@ -5,7 +5,6 @@ import { generateHTML } from '@tiptap/html';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
 import { useMemo, useState, useEffect, Suspense } from 'react';
-import { trpc } from '@/lib/trpc';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StoryBlockType } from '@/lib/types';
 import Image from 'next/image';
@@ -16,16 +15,17 @@ import { Film, Loader2 } from 'lucide-react';
 
 const ReactPlayer = dynamic<ReactPlayerProps>(() => import('react-player'), { ssr: false });
 
-// Dynamically import ChartView
 const ChartView = dynamic(() => import('./ChartView').then(mod => mod.ChartView), {
   ssr: false,
   loading: () => <Skeleton className="h-96 w-full" />,
 });
 
-type Block = StoryBlockType;
+interface BlockRendererProps {
+  block: StoryBlockType;
+  dataset: any[]; // Accept dataset as a prop
+}
 
-export function BlockRenderer(props: { block: Block }) {
-  const { block } = props;
+export function BlockRenderer({ block, dataset }: BlockRendererProps) {
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
@@ -47,12 +47,11 @@ export function BlockRenderer(props: { block: Block }) {
   }
 
   if (block.type === 'chart') {
-    const { data, isLoading } = trpc.getProjectDataset.useQuery({ projectId: block.projectId as string });
-    if (isLoading) return <Skeleton className="h-96 w-full" />;
-    if (!data) return null;
+    // No longer fetches data! It uses the prop.
+    if (!dataset) return null;
     return (
       <Suspense fallback={<Skeleton className="h-96 w-full" />}>
-        <ChartView data={data} content={block.content} />
+        <ChartView data={dataset} content={block.content} />
       </Suspense>
     );
   }
@@ -79,7 +78,6 @@ export function BlockRenderer(props: { block: Block }) {
   if (block.type === 'video') {
     const content = block.content as { url: string };
     const url = content.url;
-
     if (url) {
       return (
         <div className="overflow-hidden rounded-lg border bg-muted">
@@ -92,7 +90,7 @@ export function BlockRenderer(props: { block: Block }) {
                 controls
                 config={{
                   youtube: {
-                    playerVars: { origin: window.location.origin },
+                    playerVars: { origin: typeof window !== 'undefined' ? window.location.origin : '' },
                   },
                 }}
               />

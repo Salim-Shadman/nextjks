@@ -9,7 +9,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
-import { Logo } from '../icons/Logo'; // নতুন Logo কম্পোনেন্ট ইম্পোর্ট করুন
+import { Logo } from '../icons/Logo';
+import { useCallback } from 'react';
+import { StoryBlockType } from '@/lib/types';
 
 interface EditorSidebarProps {
   projectId: string;
@@ -26,21 +28,53 @@ const blockTypes = [
   { type: 'video', label: 'Video', icon: Film },
 ] as const;
 
+type BlockType = typeof blockTypes[number]['type'];
+
 export function EditorSidebar({ projectId, datasetUrl, isOpen, onClose }: EditorSidebarProps) {
   const utils = trpc.useUtils();
 
   const addBlockMutation = trpc.addStoryBlock.useMutation({
-    onSuccess: () => {
-      toast.success("Block added successfully!");
-      utils.getProjectById.invalidate({ id: projectId });
+    onMutate: async (newBlock) => {
+      // 1. Cancel any outgoing refetches to prevent them from overwriting our optimistic update
+      await utils.getProjectById.cancel({ id: projectId });
+
+      // 2. Snapshot the previous value
+      const previousProjectData = utils.getProjectById.getData({ id: projectId });
+
+      // 3. Optimistically update to the new value
+      if (previousProjectData) {
+        // Create a temporary block with a random ID
+        const optimisticBlock: StoryBlockType = {
+          ...newBlock,
+          id: `optimistic-${Date.now()}`,
+          order: previousProjectData.storyBlocks.length,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+
+        utils.getProjectById.setData({ id: projectId }, {
+          ...previousProjectData,
+          storyBlocks: [...previousProjectData.storyBlocks, optimisticBlock],
+        });
+      }
+      
+      toast.success("Block added!");
+      return { previousProjectData };
     },
-    onError: (err) => {
+    onError: (err, newBlock, context) => {
+      // If the mutation fails, roll back to the previous state
+      if (context?.previousProjectData) {
+        utils.getProjectById.setData({ id: projectId }, context.previousProjectData);
+      }
       toast.error("Failed to add block", { description: err.message });
+    },
+    onSettled: () => {
+      // 4. Always refetch after error or success to ensure data consistency
+      utils.getProjectById.invalidate({ id: projectId });
     },
   });
 
-
-  const handleAddBlock = (type: typeof blockTypes[number]['type']) => {
+  const handleAddBlock = useCallback((type: BlockType) => {
     let content: any;
     switch (type) {
       case 'heading': content = { text: 'New Heading' }; break;
@@ -55,21 +89,18 @@ export function EditorSidebar({ projectId, datasetUrl, isOpen, onClose }: Editor
       type: type,
       content: content,
     });
-  };
+  }, [addBlockMutation, projectId]);
 
   return (
     <TooltipProvider delayDuration={0}>
-      {/* Overlay for mobile view */}
       <div 
         className={cn("fixed inset-0 bg-black/50 z-30 md:hidden", isOpen ? "block" : "hidden")}
         onClick={onClose}
       />
       <aside className={cn(
         "bg-card border-r flex flex-col space-y-4 transition-transform duration-300 ease-in-out z-40",
-        // Mobile view: fixed, off-screen by default
         "fixed top-0 left-0 h-full w-72 md:w-auto md:h-auto md:static",
         isOpen ? "translate-x-0" : "-translate-x-full",
-        // Desktop view: sticky, in-flow
         "md:sticky md:top-16 md:h-[calc(100vh-4rem)] md:w-72 md:translate-x-0"
       )}>
         <div className="p-4 border-b">

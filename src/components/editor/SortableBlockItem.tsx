@@ -38,9 +38,46 @@ export const SortableBlockItem = React.memo(function SortableBlockItem({ block, 
     transition,
   };
 
-  const updateContentMutation = trpc.updateBlockContent.useMutation();
+  // --- START: শুধুমাত্র এই মিউটেশনটি পরিবর্তন করা হয়েছে ---
+  const updateContentMutation = trpc.updateBlockContent.useMutation({
+    onMutate: async ({ blockId, content }) => {
+      await utils.getProjectById.cancel({ id: projectId });
+      const previousProjectData = utils.getProjectById.getData({ id: projectId });
+      if (previousProjectData) {
+        utils.getProjectById.setData({ id: projectId }, {
+          ...previousProjectData,
+          storyBlocks: previousProjectData.storyBlocks.map(b => 
+            b.id === blockId ? { ...b, content } : b
+          ),
+        });
+      }
+      return { previousProjectData };
+    },
+    onSuccess: (updatedBlock) => {
+      // সার্ভার থেকে সফলভাবে আপডেট হওয়ার পর, tRPC ক্যাশ আপডেট করুন
+      utils.getProjectById.setData({ id: projectId }, (oldData) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          storyBlocks: oldData.storyBlocks.map(b =>
+            b.id === updatedBlock.id ? updatedBlock : b
+          ),
+        };
+      });
+      toast.success("Content saved!");
+    },
+    onError: (err, newContent, context) => {
+      if (context?.previousProjectData) {
+        utils.getProjectById.setData({ id: projectId }, context.previousProjectData);
+      }
+      toast.error("Failed to update content", { description: err.message });
+    },
+  });
+  // --- END: পরিবর্তন এখানেই শেষ ---
+
   const deleteBlockMutation = trpc.deleteStoryBlock.useMutation({
     onSuccess: () => {
+      toast.success("Block deleted!");
       utils.getProjectById.invalidate({ id: projectId });
     }
   });

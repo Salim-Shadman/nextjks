@@ -12,28 +12,21 @@ gsap.registerPlugin(ScrollTrigger);
 
 interface StoryViewerProps {
   blocks: StoryBlockType[];
-  projectId: string;
+  dataset: any[]; // Accept dataset as a prop
 }
 
 const MemoizedBlockRenderer = memo(BlockRenderer);
 
-export function StoryViewer({ blocks, projectId }: StoryViewerProps) {
+export function StoryViewer({ blocks, dataset }: StoryViewerProps) {
   const component = useRef<HTMLDivElement>(null);
-  const lenisRef = useRef<Lenis | null>(null);
 
   useEffect(() => {
-    // Initialize Lenis for smooth scrolling
     const lenis = new Lenis();
-    lenisRef.current = lenis;
-
-    const raf = (time: number) => {
+    function raf(time: number) {
       lenis.raf(time);
       requestAnimationFrame(raf);
-    };
-
+    }
     const reqId = requestAnimationFrame(raf);
-
-    // Cleanup function to destroy Lenis instance
     return () => {
       cancelAnimationFrame(reqId);
       lenis.destroy();
@@ -42,7 +35,6 @@ export function StoryViewer({ blocks, projectId }: StoryViewerProps) {
 
   useLayoutEffect(() => {
     if (!component.current) return;
-    // Animate story blocks on scroll using GSAP
     const ctx = gsap.context(() => {
       const storyBlocks = gsap.utils.toArray<HTMLDivElement>('.story-block');
       storyBlocks.forEach((block) => {
@@ -64,8 +56,6 @@ export function StoryViewer({ blocks, projectId }: StoryViewerProps) {
         );
       });
     }, component);
-
-    // Cleanup GSAP context on unmount
     return () => ctx.revert();
   }, [blocks]);
 
@@ -73,7 +63,8 @@ export function StoryViewer({ blocks, projectId }: StoryViewerProps) {
     <div ref={component} className="max-w-5xl mx-auto">
       {blocks.map((block) => (
         <div key={block.id} className="story-block my-8">
-          <MemoizedBlockRenderer block={block} />
+          {/* Pass dataset down to each block renderer */}
+          <MemoizedBlockRenderer block={block} dataset={dataset} />
         </div>
       ))}
     </div>

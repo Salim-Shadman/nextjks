@@ -4,7 +4,7 @@ import { publicProcedure, protectedProcedure, router } from './trpc';
 import prisma from '@/lib/prisma';
 import Papa from 'papaparse';
 import { TRPCError } from '@trpc/server';
-import { env } from '@/env'; // Corrected import path
+import { env } from '@/env';
 
 export const appRouter = router({
   // --- Project Procedures ---
@@ -58,7 +58,6 @@ export const appRouter = router({
   deleteProject: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .mutation(async ({ ctx, input }) => {
-      // The schema is set to cascade delete, so blocks will be deleted too.
       await prisma.project.delete({
         where: {
           id: input.projectId,
@@ -83,7 +82,6 @@ export const appRouter = router({
   addStoryBlock: protectedProcedure
     .input(z.object({ projectId: z.string(), type: z.string(), content: z.any() }))
     .mutation(async ({ ctx, input }) => {
-      // First, verify the user owns the project they're adding a block to
       const project = await prisma.project.findUnique({ where: { id: input.projectId }});
       if (!project || project.userId !== ctx.session.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN' });
@@ -104,7 +102,6 @@ export const appRouter = router({
   updateBlockOrder: protectedProcedure
     .input(z.object({ projectId: z.string(), orderedIds: z.array(z.string()) }))
     .mutation(async ({ ctx, input }) => {
-      // Verify user owns the project
       const project = await prisma.project.findUnique({ where: { id: input.projectId }});
       if (!project || project.userId !== ctx.session.user.id) {
         throw new TRPCError({ code: 'FORBIDDEN' });
@@ -129,12 +126,13 @@ export const appRouter = router({
         throw new TRPCError({ code: 'FORBIDDEN' });
       }
 
-      await prisma.storyBlock.update({
+      // --- START: শুধুমাত্র এই অংশটুকু পরিবর্তন করা হয়েছে ---
+      const updatedBlock = await prisma.storyBlock.update({
         where: { id: input.blockId },
         data: { content: input.content }
       });
-
-      return { success: true };
+      return updatedBlock;
+      // --- END: পরিবর্তন এখানেই শেষ ---
     }),
 
   deleteStoryBlock: protectedProcedure
@@ -156,16 +154,25 @@ export const appRouter = router({
     }),
 
   // --- Dataset Procedures ---
-  linkDatasetToProject: protectedProcedure
-    .input(z.object({ projectId: z.string(), fileUrl: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      await prisma.project.updateMany({
-        where: { id: input.projectId, userId: ctx.session.user.id },
-        data: { datasetUrl: input.fileUrl }
-      });
-      return { success: true };
+  getPublicProjectDataset: publicProcedure
+    .input(z.object({ projectId: z.string() }))
+    .query(async ({ input }) => {
+        const project = await prisma.project.findUnique({
+            where: { id: input.projectId },
+        });
+        if (!project || !project.datasetUrl) {
+            throw new TRPCError({ code: 'NOT_FOUND', message: 'Dataset not found.' });
+        }
+        const response = await fetch(project.datasetUrl);
+        const csvText = await response.text();
+        const parsedData = Papa.parse(csvText, {
+            header: true,
+            skipEmptyLines: true,
+            dynamicTyping: true,
+        });
+        return parsedData.data;
     }),
-
+    
   getProjectDataset: protectedProcedure
     .input(z.object({ projectId: z.string() }))
     .query(async ({ ctx, input }) => {
@@ -180,9 +187,19 @@ export const appRouter = router({
       const parsedData = Papa.parse(csvText, {
         header: true,
         skipEmptyLines: true,
-        dynamicTyping: true, // Automatically convert numbers and booleans
+        dynamicTyping: true,
       });
       return parsedData.data;
+    }),
+    
+  linkDatasetToProject: protectedProcedure
+    .input(z.object({ projectId: z.string(), fileUrl: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      await prisma.project.updateMany({
+        where: { id: input.projectId, userId: ctx.session.user.id },
+        data: { datasetUrl: input.fileUrl }
+      });
+      return { success: true };
     }),
 
   // --- Unsplash API Procedure ---
